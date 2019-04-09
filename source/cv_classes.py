@@ -8,11 +8,36 @@ import cv2
 import cv2.aruco as aruco
 import os
 import numpy as np
+from math import sqrt
 
 FACE_SCL = 4  # coefficient to scale the size of the face relative to the width of the aruco code
 
 # for visualizing the corners of the markers
 colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
+
+
+def x_key(coord):
+    return coord[0]
+
+
+def y_key(coord):
+    return coord[1]
+
+
+def find_square_dest(square):
+    """
+    Finds the smallest square that will fit over the input square
+    :param square: list of 4 tuples (coordinates)
+    :return: np.float32 list of 4 tuples (coordinates)
+
+    """
+    sort_x = sorted(square, key=x_key)
+    sort_y = sorted(square, key=y_key)
+
+    # TODO: change so that the destination square is actually a square and not a rectangle. Also account for rotation
+
+    return np.float32([(sort_x[0][0], sort_y[0][1]), (sort_x[-1][0], sort_y[0][1]), (sort_x[-1][0], sort_y[-1][1]),
+                       (sort_x[0][0], sort_y[-1][1])])
 
 
 class ByteCapture:
@@ -47,9 +72,6 @@ class ProcessingEngine:
         # create detection parameters
         self.parameters = aruco.DetectorParameters_create()
 
-        # cor calculating the perspective shift matrix
-        self.square_orig = np.float32([(0, 0), (300, 0), (300, 300), (0, 300)])
-
         # Set up OpenCV. If the source is local, open a local camera feed. If it is a remote
         # source, create an empty byte feed.
         if source == "local":
@@ -81,7 +103,7 @@ class ProcessingEngine:
         frame_x = frame.shape[1]  # number of pixels wide the camera frame is
         frame_y = frame.shape[0]  # number of pixels tall the camera frame is
         frame_x_c = int(frame_x / 2)  # center of the camera frame in the x direction
-        frame_y_c = int(frame_y / 2)  # center of the camera frame in the y direction
+        # frame_y_c = int(frame_y / 2)  # center of the camera frame in the y direction
 
         # detect the aruco markers
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -124,24 +146,32 @@ class ProcessingEngine:
             for i in range(4):
                 marker = markers_dict[i]
                 square.append(tuple(marker[i]))
-            for i in range(4):
-                if i is not 3:
-                    cv2.line(frame, square[i], square[i+1], colors[i], 3)
-                else:
-                    cv2.line(frame, square[i], square[0], colors[i], 3)
+
+            square_dest = find_square_dest(square)
+
+            if self.debug:
+                for i in range(4):
+                    if i is not 3:
+                        cv2.line(frame, square[i], square[i + 1], colors[i], 3)
+                        cv2.line(frame, tuple(square_dest[i]), tuple(square_dest[i + 1]), colors[i], 3)
+                    else:
+                        cv2.line(frame, square[i], square[0], colors[i], 3)
+                        cv2.line(frame, tuple(square_dest[i]), tuple(square_dest[0]), colors[i], 3)
+
+            print("#######################")
+            print(square_dest)
+            print(np.float32(square))
 
             # The transformation matrix should be found such that rotation is not a factor.
             # make sure that the calibration square's bottom edge is parallel to the frame:
-            if abs(square[2][1] - square[3][1]) < frame_y / 0.0050:
-                matrix = cv2.getPerspectiveTransform(self.square_orig, np.float32(square))
-                matrix_inv = np.linalg.inv(matrix)
-                frame = cv2.warpPerspective(frame, matrix_inv, (frame_x, frame_y))
+            if abs(square[2][1] - square[3][1]) < frame_y / .005000:
+                matrix = cv2.getPerspectiveTransform(np.float32(square), square_dest)
+                frame = cv2.warpPerspective(frame, matrix, (frame_x, frame_y))
             else:
                 cv2.putText(frame, "Please make the calibration square's bottom and top edges are parallel to the frame"
                                    ".",
                             (frame_x_c - int(frame_x / 10), frame_y - 15),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)  # apply the text
-
 
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
