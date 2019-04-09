@@ -1,27 +1,19 @@
 """
 Contains all the classes used for computer vision and backend processing.
 
-@author: Duncan Mazza, Elias Gabriel
+@author: Duncan Mazza
 @revision: v1.3
 """
 import cv2
 import cv2.aruco as aruco
 import os
 import numpy as np
-from math import sqrt
+from math import acos, cos, sin
 
 FACE_SCL = 4  # coefficient to scale the size of the face relative to the width of the aruco code
 
 # for visualizing the corners of the markers
 colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
-
-
-def x_key(coord):
-    return coord[0]
-
-
-def y_key(coord):
-    return coord[1]
 
 
 def find_square_dest(square):
@@ -31,13 +23,17 @@ def find_square_dest(square):
     :return: np.float32 list of 4 tuples (coordinates)
 
     """
-    sort_x = sorted(square, key=x_key)
-    sort_y = sorted(square, key=y_key)
+    # vector of bottom edge of the calibration square, placed at the origin
+    bottom_edge_orig = np.float32([square[2][0] - square[3][0], square[2][1] - square[3][1]])
+    mbe = np.linalg.norm(bottom_edge_orig)  # magnitude of the bottom edge
+    unit_bottom_edge = bottom_edge_orig / mbe
+    theta = acos(unit_bottom_edge.dot(np.float32([1, 0])))  # angle between horiz and bottom edge
+    if bottom_edge_orig[1] > 0:
+        theta = -theta
 
-    # TODO: change so that the destination square is actually a square and not a rectangle. Also account for rotation
-
-    return np.float32([(sort_x[0][0], sort_y[0][1]), (sort_x[-1][0], sort_y[0][1]), (sort_x[-1][0], sort_y[-1][1]),
-                       (sort_x[0][0], sort_y[-1][1])])
+    rotation_matrix = np.float32([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
+    orig_squre_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
+    return orig_squre_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
 
 
 class ByteCapture:
@@ -75,7 +71,7 @@ class ProcessingEngine:
         # Set up OpenCV. If the source is local, open a local camera feed. If it is a remote
         # source, create an empty byte feed.
         if source == "local":
-            self.cap = cv2.VideoCapture(0)
+            self.cap = cv2.VideoCapture(1)
         elif source == "remote":
             self.cap = ByteCapture()  # for future capabilities
         # Throw an error if something isn't write
@@ -99,6 +95,7 @@ class ProcessingEngine:
         faces. The processed frame is encoded as a JPEG and returned as a byte sequence. """
         # ensure that the face is already set
         _, frame = self.cap.read()
+
         # frame = cv2.flip(frame_rl, 1)
         frame_x = frame.shape[1]  # number of pixels wide the camera frame is
         frame_y = frame.shape[0]  # number of pixels tall the camera frame is
@@ -164,7 +161,7 @@ class ProcessingEngine:
 
             # The transformation matrix should be found such that rotation is not a factor.
             # make sure that the calibration square's bottom edge is parallel to the frame:
-            if abs(square[2][1] - square[3][1]) < frame_y / .005000:
+            if abs(square[2][1] - square[3][1]) < frame_y / 0.005:
                 matrix = cv2.getPerspectiveTransform(np.float32(square), square_dest)
                 frame = cv2.warpPerspective(frame, matrix, (frame_x, frame_y))
             else:
