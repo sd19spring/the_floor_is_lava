@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="description" content="A computer vision tool for retailers to optimize store layouts.">
+		<meta name="author" content="Duncan Mazza">
+		<title>A Pedestrian Heatmap Utility</title>
+		<link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+		<link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+ 	</head>
+
+ 	<body class="text-center">
+   		<div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+				<main role="main" class="inner cover mt-auto">
+					<h1>A Pedestrian Heatmap Utility</h1>
+					<br>
+					<p class="lead"></p>
+					<br>
+					<div class="mb-5">
+						<button class="button" id="button" formaction="/feed">
+							<label class="button" class="button w-100 p-5 bg-light" for="button">Go to Calibration</label>
+						</button>
+                        <div id="error" class="bg-danger text-white" style="visibility: {{ visibility }}"><small>Sorry about that, an error has occurred. Please try again.</small></div>
+					</div>
+				</main>
+
+				<footer class="mastfoot mt-auto">
+					<div class="inner">
+						<p>Made with <svg width="14" height="12"><path d="M1.014.994a3.335 3.335 0 0 0 0 4.789l5.982 5.884 5.99-5.877a3.334 3.334 0 0 0 0-4.789 3.49 3.49 0 0 0-4.88 0L7.002 2.083 5.894.995a3.49 3.49 0 0 0-4.88 0z" fill="#EF0107" fill-rule="evenodd"></path></svg> at Olin, by Michael, Nick, Gabriella, and Duncan.</p>
+						</div>
+				</footer>
+		</div>
+
+		<script src="{{ url_for('static', filename='upload.js') }}"></script>
+	</body>
+</html>
