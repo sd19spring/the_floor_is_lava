@@ -9,6 +9,8 @@ import cv2.aruco as aruco
 import os
 import numpy as np
 from math import acos, cos, sin
+import imutils
+import time
 
 FACE_SCL = 4  # coefficient to scale the size of the face relative to the width of the aruco code
 
@@ -32,8 +34,21 @@ def find_square_dest(square):
         theta = -theta
 
     rotation_matrix = np.float32([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
-    orig_squre_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
-    return orig_squre_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
+    orig_square_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
+    return orig_square_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
+
+
+class Stopwatch:
+    def __init__(self):
+        self.logged_time= time.time()
+        self.time_since_last_check = 0
+
+    def log_time(self):
+        self.logged_time = time.time()
+
+    def check_stopwatch(self):
+        self.time_since_last_check = time.time() - self.logged_time
+        return self.time_since_last_check
 
 
 class ByteCapture:
@@ -57,21 +72,25 @@ class ProcessingEngine:
     ARCUO markers in a media feed.
     """
 
-    def __init__(self, source, debug=False):
-        self.is_calibrated = False
+    def __init__(self, source, threshold=60, debug=False):
+        self.is_calibrated = False  # boolean for whether the camera has been calibrated
+        self.n = 0  # counter for the calibration process
+        self.stopwatch = Stopwatch()
+        self.matrix_list = []
+        self.calibration_matrix = np.float32()
+        self.threshold = threshold
 
         # initiate parameters for aruco detection
         self.aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
         self.debug = debug
         self.file_type = False
-
-        # create detection parameters
         self.parameters = aruco.DetectorParameters_create()
 
         # Set up OpenCV. If the source is local, open a local camera feed. If it is a remote
         # source, create an empty byte feed.
         if source == "local":
-            self.cap = cv2.VideoCapture(1)
+            self.cap0 = cv2.VideoCapture(0)
+            self.cap1 = cv2.VideoCapture(1)
         elif source == "remote":
             self.cap = ByteCapture()  # for future capabilities
         # Throw an error if something isn't write
@@ -94,7 +113,7 @@ class ProcessingEngine:
         """ Reads a frame from the given capture device, identifies the markers and inserts the desired
         faces. The processed frame is encoded as a JPEG and returned as a byte sequence. """
         # ensure that the face is already set
-        _, frame = self.cap.read()
+        _, frame = self.cap1.read()
 
         # frame = cv2.flip(frame_rl, 1)
         frame_x = frame.shape[1]  # number of pixels wide the camera frame is
@@ -106,18 +125,32 @@ class ProcessingEngine:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         markers, ids, _ = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
 
+        if self.stopwatch.check_stopwatch() > 2:
+            self.n = 0  # reset the counter if it has been too long
+            self.matrix_list = []  # reset the matrix_list
+
+        # look for one marker sheet
         if len(markers) < 4:
             cv2.putText(frame, "A full calibration sheet isn't visible.", (frame_x_c - int(frame_x / 10), frame_y - 15),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)  # apply the text
+
+            if self.debug:  # visualizing the progress of the calibration
+                cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0), -1)
+
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
         elif len(markers) > 4:
             cv2.putText(frame, "Whoa that's too many markers! Please only use one calibration sheet at a time.",
                         (frame_x_c - int(frame_x / 6), frame_y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                         (255, 255, 255), 2)  # apply the text
+
+            if self.debug:  # visualizing the progress of the calibration
+                cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0), -1)
+
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
         else:
+            self.n += 1  # update the counter
             # make a dictionary of the markers so that they can be accessed by their id
             markers_dict = {}
             for i in range(4):
@@ -146,6 +179,7 @@ class ProcessingEngine:
 
             square_dest = find_square_dest(square)
 
+            # visualize the destination square (should appear distorted on the perspective-corrected frame)
             if self.debug:
                 for i in range(4):
                     if i is not 3:
@@ -155,26 +189,41 @@ class ProcessingEngine:
                         cv2.line(frame, square[i], square[0], colors[i], 3)
                         cv2.line(frame, tuple(square_dest[i]), tuple(square_dest[0]), colors[i], 3)
 
-            print("#######################")
-            print(square_dest)
-            print(np.float32(square))
+                # visualize the process of the calibration process: n frames calibrated / self.threshold needed
+                cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0), -1)
 
-            # The transformation matrix should be found such that rotation is not a factor.
-            # make sure that the calibration square's bottom edge is parallel to the frame:
-            if abs(square[2][1] - square[3][1]) < frame_y / 0.005:
-                matrix = cv2.getPerspectiveTransform(np.float32(square), square_dest)
-                frame = cv2.warpPerspective(frame, matrix, (frame_x, frame_y))
+            matrix = cv2.getPerspectiveTransform(np.float32(square), square_dest)  # get the transformation matrix
+            self.matrix_list.append(matrix)
+            frame = cv2.warpPerspective(frame, matrix, (frame_x, frame_y))
+
+            if self.n > self.threshold:  # take self.threshold frames to calibrate; if calibrated, flip the is_calibrated switch
+                self.is_calibrated = True
+
+                # find the average calibration matrix between the self.threshold frames
+                for i in range(self.threshold):  # self.matrix_list should be self.threshold long
+                    self.calibration_matrix = self.calibration_matrix + self.matrix_list[i]
+                self.calibration_matrix = self.calibration_matrix / self.threshold
+
+                return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
             else:
-                cv2.putText(frame, "Please make the calibration square's bottom and top edges are parallel to the frame"
-                                   ".",
-                            (frame_x_c - int(frame_x / 10), frame_y - 15),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)  # apply the text
-
-            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+                self.stopwatch.log_time()  # log the time
+                return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
     def get_frame(self):
-        _, frame = self.cap.read()
+        _, frame = self.cap1.read()
+        frame = cv2.warpPerspective(frame, self.calibration_matrix, (frame.shape[1], frame.shape[0]))
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
+    def homography_test(self):
+        _, frame0 = self.cap0.read()
+        _, frame1 = self.cap1.read()
+
+        stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
+        (status, stitched) = stitcher.stitch([frame0, frame1])
+        if status == 0:
+            return stitched
+        else:
+            return frame1
 
 
 if __name__ == "__main__":
