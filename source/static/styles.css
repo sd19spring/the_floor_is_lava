@@ -7,15 +7,16 @@ Defines the CSS3 styles for all the DOM objects throughout the web app.
 **/
 html, body {
 	height: 100%;
-	background-color: #333;
+	background-color: #fff;
 }
 
 body {
 	display: -ms-flexbox;
 	display: flex;
-	color: #fff;
-	text-shadow: 0 0.05rem 0.1rem rgba(0, 0, 0, 0.5);
-	box-shadow: inset 0 0 5rem rgba(0, 0, 0, 0.5);
+	color: #333333;
+	text-emphasis: #fff;
+	text-shadow: 0 0.05rem 0.05rem rgba(0, 0, 0, 0.5);
+	box-shadow: inset 0 0 10rem rgba(0, 0, 0, 0.5);
 }
 
 .cover-container {
@@ -28,7 +29,7 @@ body {
 }
 
 .mastfoot {
-	color: rgba(255, 255, 255, 0.5);
+	color: rgba(0, 0, 0, 0.7);
 }
 
 #selector {
@@ -36,12 +37,38 @@ body {
 }
 
 .button {
-	color: #333;
+	color: #fff;
  	text-shadow: none;
-	background-color: #fff;
-	border: 0.05rem solid #fff;
+	background-color: #64a19d;
 	border-radius: 0.3rem;
 	cursor: pointer;
+}
+
+.button:hover {
+	color: #fff;
+ 	text-shadow: none;
+	background-color: #4f837f;
+	border-radius: 0.4rem;
+	cursor: pointer;
+	text-underline: none;
+}
+
+.button_small {
+	color: #333333;
+ 	text-shadow: none;
+	background-color: #A6C0BE;
+	border-radius: 0.3rem;
+	cursor: pointer;
+	text-underline: none;
+}
+
+.button_small:hover {
+	color: #333333;
+ 	text-shadow: none;
+	background-color: #C6E4E2;
+	border-radius: 0.4rem;
+	cursor: pointer;
+	text-underline: none;
 }
 
 #error {
@@ -50,7 +77,7 @@ body {
 }
 
 #capture {
-	position: fixed; 
+	position: fixed;
 	min-height: 100%;
 	top: 50px;
 	left: 50%;
