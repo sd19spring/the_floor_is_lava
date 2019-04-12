@@ -12,8 +12,11 @@ def index(error=False):
     return render_template('index.html', visibility=("visible" if error else "hidden"))
 
 
-def feed(error=False):
-    return render_template('feed.html', visibility=("visible" if error else "hidden"))
+def select_feeds(error=False):
+    return render_template('select_feeds.html', visibility=("visible" if error else "hidden"))
+
+def more_info(error=False):
+    return render_template('more_info.html', visibility=("visible" if error else "hidden"))
 
 
 if __name__ == "__main__":
@@ -22,7 +25,8 @@ if __name__ == "__main__":
     # Define the application routes
     app.route({
         '/': index,
-        '/feed': feed,
+        '/select_feeds': select_feeds,
+        '/more_info': more_info,
     })
 
     # Beginning listening on `localhost`, port 3000
