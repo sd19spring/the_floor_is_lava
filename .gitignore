@@ -103,6 +103,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# xml and iml files
-*.iml
-*.xml
+pedestrian_detection_opencv/Time Lapse - Adorama Camera.mp4
+
+.iml
+.xml
