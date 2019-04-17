@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 
 #initalize matrix 5 rows by 5 columns
 arry = np.zeros((5,5))
@@ -24,6 +24,7 @@ def test_heatmap(a):
     a = np.stack(dummy_list)
     plt.imshow(a, cmap='hot', interpolation='nearest')
     plt.show()
+    plt.savefig('matrix.jpg')
 
 
 if __name__ == '__main__':
