@@ -4,12 +4,11 @@ Contains all the classes used for computer vision and backend processing.
 @author: Duncan Mazza
 @revision: v1.3
 """
+
 import cv2
 import cv2.aruco as aruco
-import os
 import numpy as np
 from math import acos, cos, sin
-import imutils
 import time
 
 # for visualizing the corners of the markers
@@ -82,44 +81,33 @@ class ProcessingEngine:
     The backend class for image per-processing.
     """
 
-    def __init__(self, source, threshold=60, debug=False):
-        self.is_calibrated = False  # boolean for whether the camera has been calibrated
+    def __init__(self, threshold=60, debug=False):
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
         self.matrix_list = []
-        self.calibration_matrix = np.float32()
         self.threshold = threshold
 
-        # initiate parameters for ARUCO detection
+        # initialize parameters for ARUCO detection
         self.aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
         self.debug = debug
         self.file_type = False
         self.parameters = aruco.DetectorParameters_create()
 
-        # Set up OpenCV. If the source is local, open a local camera feed. If it is a remote
-        # source, create an empty byte feed.
-        if source == "local":
-            self.cap0 = cv2.VideoCapture(0)
-            self.cap1 = cv2.VideoCapture(1)
-        elif source == "remote":
-            self.cap = ByteCapture()  # for future capabilities
-        # Throw an error if something isn't write
-        else:
-            raise ("Unknown source type! Must be `local`, `file`, or `remote`.")
+        self.cap_dict = {}  # store the OpenCV captures in a dictionary
+        self.num_caps = 0
+        # add all of the OpenCV captures to self.cap_dict:
+        i = 0
+        while True:  # support up to 5 different cameras
+            cap = cv2.VideoCapture(i)
+            if cap.isOpened():
+                # Data structure of dictionary entries: (OpenCV capture, calibration boolean, transformation matrix)
+                self.cap_dict[i] = [cap, 0]  # 0 is a placeholder for the calibration matrix
+            else:
+                self.num_caps = i
+                break
+            i += 1
 
-    @staticmethod
-    def generate_markers(num_markers):
-        """ Generate ARUCO markers if they do not exist, relative to the path of execution. """
-        # Create ARUCO markers if necessary
-        if not os.path.exists("./source/static/markers"):
-            os.system("mkdir ./source/static/markers")
-
-            # Create 10 unique markers
-            for marker_num in range(num_markers):
-                img = arcuo.drawMarker(aruco.Dictionary_get(aruco.DICT_6X6_250), marker_num, 700)
-                cv2.imwrite("./source/static/markers/marker_{}.jpg".format(str(marker_num)), img)
-
-    def calibrate(self):
+    def calibrate(self, cap_num):
         """
         Calibrates the camera so that the perspective of the camera will always be orthogonal to the floor or whatever
         surface it is calibrated with. To do this, it looks for the marker calibration sheet. When it finds the markers,
@@ -131,7 +119,8 @@ class ProcessingEngine:
 
         :return: frame or frame converted to bytes, depending on use case
         """
-        _, frame = self.cap1.read()
+        cap = self.cap_dict[cap_num][0]  # select the camera to be calibrated
+        _, frame = cap.read()
 
         frame_x = frame.shape[1]  # number of pixels wide the camera frame is
         frame_y = frame.shape[0]  # number of pixels tall the camera frame is
@@ -142,8 +131,9 @@ class ProcessingEngine:
         markers, ids, _ = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
 
         if self.stopwatch.check_stopwatch() > 2:
-            self.n = 0  # reset the counter if it has been too long
-            self.matrix_list = []  # reset the matrix_list
+            self.n = 0  # reset the counter if it has been too long; counter is used for ensuring enough frames have
+            #             been captured for the average matrix to be calculated
+            self.matrix_list = []  # reset the matrix_list if this is the case
 
         if len(markers) < 4:  # look for one marker sheet
             cv2.putText(frame, "A full calibration sheet isn't visible.", (frame_x_c - int(frame_x / 10), frame_y - 15),
@@ -152,7 +142,6 @@ class ProcessingEngine:
             if self.debug:  # visualizing the progress of the calibration
                 cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0),
                               -1)
-
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
         elif len(markers) > 4:  # handle the edge case wehre multiple calibration sheets are in frame
@@ -163,7 +152,6 @@ class ProcessingEngine:
             if self.debug:  # visualizing the progress of the calibration
                 cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0),
                               -1)
-
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
         else:  # one calibration sheet has been detected
@@ -218,50 +206,51 @@ class ProcessingEngine:
 
             # take self.threshold frames to calibrate; if calibrated, flip the is_calibrated switch
             if self.n > self.threshold:
-                self.is_calibrated = True
-
                 # find the average calibration matrix between the self.threshold frames
+                calibration_matrix = np.float32()
                 for i in range(self.threshold):  # self.matrix_list should be self.threshold long
-                    self.calibration_matrix = self.calibration_matrix + self.matrix_list[i]
-                self.calibration_matrix = self.calibration_matrix / self.threshold
+                    calibration_matrix = calibration_matrix + self.matrix_list[i]
+                self.cap_dict[cap_num][1] = calibration_matrix / self.threshold
 
                 return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
             else:
                 self.stopwatch.log_time()  # log the time
                 return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
-    def get_calibrated_frame(self):
+    def get_calibrated_frames(self):
         """
-        Returns the captured frame that is warped by the self.calibration_matrix
+        Returns the captured frame that is warped by the calibration_matrix
         :return: frame or frame converted to bytes, depending on use case
         """
-        _, frame = self.cap1.read()
-        frame = cv2.warpPerspective(frame, self.calibration_matrix, (frame.shape[1], frame.shape[0]))
-        return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+        calibrated_frames = []
+        for i in range(self.num_caps):
+            cap = self.cap_dict[i][0]
+            _, frame = cap.read()
+            calibrated_frames.append(cv2.warpPerspective(frame, self.cap_dict[i][1],
+                                                         (frame.shape[1], frame.shape[0])))
 
-    def homography_test(self):
-        """
-        Experimenting with stitching two camera's feeds together
-        """
-        _, frame0 = self.cap0.read()
-        _, frame1 = self.cap1.read()
-
-        stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
-        (status, stitched) = stitcher.stitch([frame0, frame1])
-        if status == 0:
-            return stitched
-        else:
-            return frame1
+        if not self.debug:
+            for i in range(len(calibrated_frames)):
+                calibrated_frames[i] = cv2.imencode('.jpg', calibrated_frames[i])[1].tobytes()
+        return calibrated_frames
 
 
 if __name__ == "__main__":
-    engine = ProcessingEngine(source="local", debug=True)
+    engine = ProcessingEngine(debug=True)
 
-    while not engine.is_calibrated:
-        output = engine.calibrate()
-        if output is not None:
-            cv2.imshow('calibrating', output)
-            if cv2.waitKey(1) & 0xFF == ord('q'): break
+    # run through each camera connected to the computer and calibrate it
+    for i in range(engine.num_caps):
+        while engine.cap_dict[i][1] is 0:
+            output = engine.calibrate(i)
+            cv2.imshow('calibrating {}'.format(i), output)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+    # display each camera connected to the computer with a corrected perspective
     while True:
-        cv2.imshow('frame', engine.get_calibrated_frame())
-        if cv2.waitKey(1) & 0xFF == ord('q'): break
+        calibrated_frames = engine.get_calibrated_frames()
+        for i in range(engine.num_caps):
+            frame = calibrated_frames[i]
+            cv2.imshow("frame {}".format(i), frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
