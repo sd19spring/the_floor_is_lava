@@ -8,7 +8,10 @@ import cv2
 # initialize the webcam
 # 0 is the built in camera for most laptops
 # 1 should be the auxillary USB camera, if connected
-cap = cv2.VideoCapture(0)
+
+filename ="EUH.mp4"
+#cap = cv2.VideoCapture(filename)
+cap = cv2.VideoCapture(1)
 
 # initialize the HOG descriptor/person detector
 hog = cv2.HOGDescriptor()
@@ -18,7 +21,7 @@ while(True):
     # Get a frame from the webcam
     ret, frame = cap.read()
     # Resize (optional) to help speed
-    #frame = imutils.resize(frame, width=min(400, frame.shape[1]))
+    #frame = imutils.resize(frame, width=min(1080, frame.shape[1]))
 
     # Part of the original demo combined overlapping boxes
     # It uses "orig" as a copy of "frame"
@@ -26,7 +29,7 @@ while(True):
 
     # detect people in the image
     # winStride describes the size of the sliding window, larger = faster
-    (rects, weights) = hog.detectMultiScale(frame, winStride=(1, 1), padding=(8, 8), scale=1.05)
+    (rects, weights) = hog.detectMultiScale(frame, winStride=(2, 2), padding=(8, 8), scale=1.05)
 
     # draw the original bounding boxes for detected peds
     for (x, y, w, h) in rects:
@@ -46,7 +49,7 @@ while(True):
     # Display the resulting frame
     # show the output images
     cv2.imshow("Before NMS", orig)
-    cv2.imshow("After NMS", frame)
+    #cv2.imshow("After NMS", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
