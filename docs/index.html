@@ -4,12 +4,84 @@
 <head>
 
   <title>The Floor is Lava</title>
-  <meta name="description" content="The Floor is Lava">
+  <meta name="description" content="The Floor is Lava is a software package
+  for recognizing shoppers from video feed and constructing a visualization
+  of the flow within a retail store setting.">
   <meta name="author" content="Michael Remley">
 
+  <style>
+  body {
+
+  }
+  header {
+    font: bold 50px tahoma;
+    color: white;
+    text-align: center;
+    background: darkblue;
+    box-shadow: 0px 0px 10px 10px darkblue;
+    margin-bottom:1%;
+  }
+  div.body {
+    background: lightblue;
+    box-shadow: 0px 0px 10px 10px lightblue;
+  }
+  h1 {
+    font: bold italic 30px tahoma;
+  }
+  p {
+    font: 25px tahoma;
+    text-indent: 2em;
+    margin:auto;
+    width:95%;
+  }
+  nav {
+    display:flex;
+    justify-content: space-evenly;
+  }
+  a.nav {
+    text-decoration: none;
+    font: bold 20px tahoma;
+    color:black;
+  }
+  </style>
 </head>
 
 <body>
 
+<header>The Floor is Lava</header>
+
+<div class="body">
+  <nav>
+  <a class='nav' href="./index.html" style=nav>Home</a>
+  <a class='nav' href="./instructions.html" style=nav>How to Run</a>
+  <a class='nav' href="./implementation.html" style=nav>Implementation</a>
+  <a class='nav' href="./impactstatement.html" style=nav>Impact Statement</a>
+  </nav>
+
+<h1>What does this project do?</h1>
+
+<p>We set out to create a software package that takes retail store video as
+  input and produces useful information about the foot traffic and flow as
+  output.<br>
+  <span style="display:-webkit-box;">
+  <img src="./images/NY_ppl_normal.jpg" alt="Image of people in store" width="35%"
+  style='vertical-align:middle;height:20%;border:solid black'>
+  <img src="./images/long-arrow-right.png" alt="Right arrow" width="10%">
+  <img src="./images/NY_ppl_normal.jpg" alt="Image of people in store" width="35%"
+  style='vertical-align:middle;height:20%;border:solid black'>
+  </span>
+  <i>For an image, we start with the left input and produce the right output.</i>
+</p>
+<h1>Project Evolution</h1>
+<p>We knew what project we wanted to do from the start, and we talked about which
+   skills each of us has to bring to the table. Feeling that we could pull this off,
+ all four of us began researching computer vision and image processing methods
+ for detecting people. After a while, we picked a single method and Duncan and
+ Gabriella began to iterate on it to meet our needs. Meanwhile, Nick went out
+ to collect sample footage from the real world, and Michael began to put
+ together the project website you see here."</p>
+<h1>Results</h1>
+<p>We detected a person one time.</p>
+</div>
 </body>
 </html>
