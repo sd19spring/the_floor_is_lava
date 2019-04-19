@@ -54,11 +54,11 @@ if __name__ == '__main__':
 
     # number of region proposals to show
     # numShowRects = 100
-    numShowRects = 60
+    numShowRects = 50
     # increment to increase/decrease total number
     # of reason proposals to be shown
     # increment = 50
-    incremement = -15
+    increment = 15
 
     while True:
         # create a copy of original image
