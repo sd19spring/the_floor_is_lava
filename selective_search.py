@@ -68,9 +68,13 @@ if __name__ == '__main__':
         # set input image on which we will run segmentation
         ss.setBaseImage(thresh)
 
-        # Switch to fast but low recall Selective Search method
-        # if (sys.argv[3] == 'f'):
-        ss.switchToSelectiveSearchFast()
+    # number of region proposals to show
+    # numShowRects = 100
+    numShowRects = 50
+    # increment to increase/decrease total number
+    # of reason proposals to be shown
+    # increment = 50
+    increment = 15
 
         # Switch to high recall but slow Selective Search method
         # elif (sys.argv[3] == 'q'):
