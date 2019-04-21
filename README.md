@@ -1,23 +1,31 @@
-# The Floor is Lava
-## A repository for watching a video feed of a retail store and creating a visual display of foot traffic flow.
+# The Floor is Lava - a computer vision utility for tracking pedestrian foot traffic
+
+### Install:
+```
+pip install requirements
+```
+Makes heavy use of:
+- Opencv
+- Flask
+
+### Usage
+In the /source directory:
+```
+python app.py
+```
+A web app will open up and walk you through the rest!
+
+### Features:
+Gain a better understanding of your retail store by visualizing how people move through your store.
+- Easy to use web app
+- Handles multiple cameras, and can even stitch them together
+- Robust tracking using a machine learning object detection algorithm
+
+### Examples:
+*tbd*
+
 ### Authors
 * Gabriella Bourdon
 * Michael Remley
 * Nick Bourdon
 * Duncan Mazza
-### Getting Started
-1. The following modules are required:
-  1. OpenCV
-  1. (Others to be added when project is in final form)
-1. With modules installed run [startup.py]
-  1. You will be prompted for the directory of the video file to analyze or the video feed
-  1. If you get here, you are good to go!
-  1. (Other startup steps to be added here)
-### Usage
-1. Run startup.py and respond to the prompts
-1. During runtime, you have the following controls
-  * Spacebar to pause feed
-  * S to stop and save output
-  * Q + P to stop without saving
-### License
-__None Yet__
