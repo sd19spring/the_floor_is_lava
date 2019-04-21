@@ -109,7 +109,6 @@ class ProcessingEngine:
                 break
             i += 1
 
-
     def calibrate(self, cap_num):
         """
         Calibrates the camera so that the perspective of the camera will always be orthogonal to the floor or whatever
@@ -238,6 +237,8 @@ class ProcessingEngine:
                 frame = self.calibrate(cap_num)
                 return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
+
 
 
 if __name__ == "__main__":

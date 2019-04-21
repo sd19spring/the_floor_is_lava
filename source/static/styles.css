@@ -6,7 +6,7 @@ Defines the CSS3 styles for all the DOM objects throughout the web app.
 @credit: Original styling based off of Bootstrap's example "Cover" theme
 **/
 html, body {
-	height: auto;
+	/*height: 100%;*/
 	min-height: 100vh;
 	background-color: #fff;
 }
@@ -20,7 +20,8 @@ body {
 }
 
 .cover-container {
- 	max-width: 42em;
+ 	max-width: 50em;
+	align-content: center;
 }
 
 .cover {
@@ -84,26 +85,12 @@ body {
 	align-content: center;
 	border-radius: 1.5rem;
 	padding: 1rem;
-	max-width: 50%;
-}
-
-#capture_instruct {
-	min-height: 10%;
-	left: 50%;
-	text-align: center;
-}
-
-#marker {
 	max-width: 100%;
-	padding: 5rem;
-	background-color: white;
 }
 
-#captured_image {
+.switch {
+	align-content: center;
 	max-width: 100%;
-	border-radius: 0.3rem;
-	padding: 0.3rem;
-	background-color: white;
+	border: 1rem;
 }
-
 

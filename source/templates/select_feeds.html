@@ -12,8 +12,18 @@
 </head>
 
 <body class="text-center">
-<div class="container d-flex p-3 mx-auto flex-column">
-    <div id="childElement"></div>
+<section class="container d-flex p-3 mx-auto flex-column">
+    <div class="row">
+        <div class="align-left" style="width: 60%; align-content: center">
+            <div id="childElement"></div>
+        </div>
+        <div class="align-center" style="width: 10%"></div>
+        <div class="align-right", style="width: 30%; padding-top: 1rem">
+            <h1>Welcome to the hub</h1>
+            <p class="lead" style="text-align: left">See every camera connected to your computer. Choose which ones to ignore or keep for analysis. Click "perspective correct" for cameras that are pointed at an angle.</p>
+            <div class="cover button">I'm ready to record! ➡️</div>
+        </div>
+    </div>
     <footer class="mastfoot mt-auto">
         <div class="inner">
             <p>Made with
@@ -25,7 +35,7 @@
             </p>
         </div>
     </footer>
-</div>
+</section>
 <script>
     let i;
     for (i = {{ NUM_CAPS }}; i >= 0; i--) {
@@ -33,7 +43,7 @@
         var frame = document.createElement("div");
         var eye_str = '/' + i;
         frame.setAttribute('class', 'capture_div');
-        frame.innerHTML = '<img src="' + eye_str + '" class="capture"/>';
+        frame.innerHTML = '<img src="' + eye_str + '" class="capture"/><div class="switch" style="text-align: center"><div class="cover button" style="width: 50%">Toggle on/off</div></div>';
         // Get a reference to the element, before we want to insert the element
         var sp2 = document.getElementById("childElement");
         // Get a reference to the parent element
