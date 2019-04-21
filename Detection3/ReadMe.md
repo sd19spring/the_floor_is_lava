@@ -8,5 +8,5 @@ https://github.com/OlafenwaMoses/ImageAI/releases/download/2.0.2/imageai-2.0.2-p
 
 and its dependencies (tensorflow, numpy, scipy, opencv, pillow, matplotlib, h5py, keras)
 
-The Object Detection model file
+The Object Detection model file - *IF YOU DOWNLOAD THIS TO RUN THE FILE, DO *NOT* PUSH TO GIT. THE FILE IS TOO BIG*
 https://github.com/OlafenwaMoses/ImageAI/releases/download/1.0/yolo.h5
