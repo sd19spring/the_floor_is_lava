@@ -7,15 +7,13 @@ header {
   text-align: center;
   background: darkblue;
   box-shadow: 0px 0px 10px 10px darkblue;
-  padding: 5rem;
+  padding: 3rem;
   margin-bottom:1%;
 }
-div.body {
+main{
+  padding:  3% 10%;
   background: lightblue;
   box-shadow: 0px 0px 10px 10px lightblue;
-}
-main{
-  margin: 3% 10%;
 }
 h1 {
   font: bold italic 35pt tahoma;
@@ -28,9 +26,8 @@ p {
   width:95%;
 }
 nav {
-  padding: 3rem;
   font: bold 30pt tahoma;
-  color: black;
+  color: white;
   text-align:center;
   display:flex;
   justify-content: space-evenly;
