@@ -8,6 +8,12 @@ Makes heavy use of:
 - Opencv
 - Flask
 
+You will need to install the following modules:
+- OpenCV-contrib
+- Flask
+- Flask_session
+- redis
+
 ### Usage
 In the /source directory:
 ```
