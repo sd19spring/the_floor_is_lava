@@ -82,6 +82,7 @@ class ProcessingEngine:
     """
 
     def __init__(self, threshold=60, debug=False):
+
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
         self.matrix_list = []
@@ -99,6 +100,7 @@ class ProcessingEngine:
         i = 0
         while True:  # support up to 5 different cameras
             cap = cv2.VideoCapture(i)
+
             if cap.isOpened():
                 # Data structure of dictionary entries: (OpenCV capture, calibration boolean, transformation matrix)
                 self.cap_dict[i] = [cap, 0]  # 0 is a placeholder for the calibration matrix
@@ -142,9 +144,10 @@ class ProcessingEngine:
             if self.debug:  # visualizing the progress of the calibration
                 cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0),
                               -1)
-            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+            return frame
 
         elif len(markers) > 4:  # handle the edge case wehre multiple calibration sheets are in frame
+
             cv2.putText(frame, "Whoa that's too many markers! Please only use one calibration sheet at a time.",
                         (frame_x_c - int(frame_x / 6), frame_y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                         (255, 255, 255), 2)  # apply the text
@@ -152,7 +155,7 @@ class ProcessingEngine:
             if self.debug:  # visualizing the progress of the calibration
                 cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0),
                               -1)
-            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+            return frame
 
         else:  # one calibration sheet has been detected
             self.n += 1  # update the counter
@@ -211,46 +214,40 @@ class ProcessingEngine:
                 for i in range(self.threshold):  # self.matrix_list should be self.threshold long
                     calibration_matrix = calibration_matrix + self.matrix_list[i]
                 self.cap_dict[cap_num][1] = calibration_matrix / self.threshold
-
-                return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+                return frame
             else:
                 self.stopwatch.log_time()  # log the time
-                return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+                return frame
 
-    def get_calibrated_frames(self):
+    def get_frame(self, cap_num, calibrate=False):
         """
         Returns the captured frame that is warped by the calibration_matrix
+        :param: cap_num - index number of the OpenCV capture
+        :param: calibrate - boolean for whether the frame should be perspective corrected
         :return: frame or frame converted to bytes, depending on use case
         """
-        calibrated_frames = []
-        for i in range(self.num_caps):
-            cap = self.cap_dict[i][0]
-            _, frame = cap.read()
-            calibrated_frames.append(cv2.warpPerspective(frame, self.cap_dict[i][1],
-                                                         (frame.shape[1], frame.shape[0])))
+        cap = self.cap_dict.get(int(cap_num))[0]
 
-        if not self.debug:
-            for i in range(len(calibrated_frames)):
-                calibrated_frames[i] = cv2.imencode('.jpg', calibrated_frames[i])[1].tobytes()
-        return calibrated_frames
+        _, frame = cap.read()
+
+        if calibrate:
+            if self.cap_dict[cap_num][1] != 0:  # already calibrated
+                frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][1], (frame.shape[1], frame.shape[0]))
+            while self.cap_dict[cap_num][1] == 0:  # not yet calibrated
+                frame = self.calibrate(cap_num)
+                return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+        return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
+
 
 
 if __name__ == "__main__":
     engine = ProcessingEngine(debug=True)
 
-    # run through each camera connected to the computer and calibrate it
-    for i in range(engine.num_caps):
-        while engine.cap_dict[i][1] is 0:
-            output = engine.calibrate(i)
-            cv2.imshow('calibrating {}'.format(i), output)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
     # display each camera connected to the computer with a corrected perspective
     while True:
-        calibrated_frames = engine.get_calibrated_frames()
-        for i in range(engine.num_caps):
-            frame = calibrated_frames[i]
-            cv2.imshow("frame {}".format(i), frame)
+        for cap_num in range(engine.num_caps):
+            frame = engine.get_frame(cap_num, calibrate=True)
+            cv2.imshow("frame {}".format(cap_num), frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
