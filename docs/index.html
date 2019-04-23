@@ -14,34 +14,43 @@
 
   }
   header {
-    font: bold 50px tahoma;
+    font: bold 75pt tahoma;
     color: white;
     text-align: center;
     background: darkblue;
     box-shadow: 0px 0px 10px 10px darkblue;
+    padding: 5rem;
     margin-bottom:1%;
   }
   div.body {
     background: lightblue;
     box-shadow: 0px 0px 10px 10px lightblue;
   }
+  main{
+    margin: 3% 10%;
+  }
   h1 {
-    font: bold italic 30px tahoma;
+    font: bold italic 35pt tahoma;
   }
   p {
-    font: 25px tahoma;
+    font: 30pt tahoma;
     text-indent: 2em;
+    padding-bottom:1em;
     margin:auto;
     width:95%;
   }
   nav {
+    padding: 3rem;
+    font: bold 30pt tahoma;
+    color: black;
+    text-align:center;
     display:flex;
     justify-content: space-evenly;
   }
   a.nav {
     text-decoration: none;
-    font: bold 20px tahoma;
-    color:black;
+    font: inherit;
+    color:inherit;
   }
   </style>
 </head>
@@ -52,37 +61,35 @@
 
 <div class="body">
   <nav>
-  <a class='nav' href="./index.html" style=nav>Home</a>
-  <a class='nav' href="./instructions.html" style=nav>How to Run</a>
-  <a class='nav' href="./implementation.html" style=nav>Implementation</a>
-  <a class='nav' href="./impactstatement.html" style=nav>Impact Statement</a>
+  <a class='nav' href="./index.html">Home</a><span>|</span>
+  <a class='nav' href="./instructions.html">How to Run</a><span>|</span>
+  <a class='nav' href="./implementation.html">Implementation</a><span>|</span>
+  <a class='nav' href="./impactstatement.html">Impact Statement</a>
   </nav>
-
+<main>
 <h1>What does this project do?</h1>
 
 <p>We set out to create a software package that takes retail store video as
   input and produces useful information about the foot traffic and flow as
   output.<br>
-  <span style="display:-webkit-box;">
+  <span style="display:flex;justify-content:center;">
   <img src="./images/NY_ppl_normal.jpg" alt="Image of people in store" width="35%"
   style='vertical-align:middle;height:20%;border:solid black'>
   <img src="./images/long-arrow-right.png" alt="Right arrow" width="10%"
-  style='vertical-align:middle;height:20%;'>
+  style='vertical-align:middle;height:20%;margin: auto 2rem;'>
   <img src="./images/NY_ppl_normal.jpg" alt="Image of people in store" width="35%"
   style='vertical-align:middle;height:20%;border:solid black'>
   </span>
   <i>For an image, we start with the left input and produce the right output.</i>
+  <p> The name "The Floor is Lava" comes from the visual effect of the heatmap that makes it appear that the floor is lava.
 </p>
 <h1>Project Evolution</h1>
-<p>We knew what project we wanted to do from the start, and we talked about which
-   skills each of us has to bring to the table. Feeling that we could pull this off,
- all four of us began researching computer vision and image processing methods
- for detecting people. After a while, we picked a single method and Duncan and
- Gabriella began to iterate on it to meet our needs. Meanwhile, Nick went out
- to collect sample footage from the real world, and Michael began to put
- together the project website you see here."</p>
+<p>We knew what project we wanted to do from the start, and we talked about which skills each of us could bring to the table. Feeling that we could pull this off, all four of us began researching computer vision, image processing, and the ethics of our project idea. Issues were brought to our attention that led us to shy away from methods, such as facial recognition, that produced personally identifiable information from the images.</p>
+<p>After the first architectural review, we began to experiment with all the methods we had uncovered and tested their ability to meet our needs. We picked a single method and Duncan and Gabriella began to iterate on it to meet our needs. Meanwhile, Nick collected sample footage from the Untitled Fashion Show, and Michael began to put together the project website you see here. Now that we were writing code that would become part of the final project, documentation became an important focus.</p>
+<p></p>
 <h1>Results</h1>
 <p>We detected a person one time.</p>
 </div>
+</main>
 </body>
 </html>
