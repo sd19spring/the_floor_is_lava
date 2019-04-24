@@ -49,11 +49,10 @@ class WebApplication(Flask):
         # the ProcessingEngine
         self.run(options.get('host', "127.0.0.1"), options.get('port', 3000), options, use_reloader=False)
 
-    def route(self, routes):
+    def route(self, routes, post_only):
         """ Registers each URL rule in routes to its specificed endpoint and response function. """
         for url, func in routes.items():
-            # if func.__name__ != 'eye':
+            if url not in post_only:
                 self.add_url_rule(url, func.__name__, func, methods=['GET', 'POST'])
-            # else:
-                # self.add_url_rule('/<CAP_NUM>', func.__name__, func, methods=['GET', 'POST'])
-                # print(self.url_map)
+            else:
+                self.add_url_rule(url, func.__name__, func, methods=['POST'])
