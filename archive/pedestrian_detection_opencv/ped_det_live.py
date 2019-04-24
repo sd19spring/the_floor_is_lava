@@ -4,6 +4,13 @@ import numpy as np
 import argparse
 import imutils
 import cv2
+"""
+Demo of pedestrian detection through webcam or video file
+
+Requires: opencv, imutils
+See https://www.pyimagesearch.com/2015/11/09/pedestrian-detection-opencv/ for more information
+@author: Michael Remley
+"""
 
 # initialize the webcam
 # 0 is the built in camera for most laptops
