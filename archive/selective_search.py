@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 '''
+Requires: opencv, skimage
+
 Usage:
     ./ssearch.py input_image (f|q)
     f=fast, q=quality
 Use "l" to display less rects, 'm' to display more rects, "q" to quit.
+
+@author: Gabriella Bourdon, Michael Remley
 '''
 
 import sys
