@@ -88,11 +88,14 @@ class ProcessingEngine:
         self.matrix_list = []
         self.threshold = threshold
 
-        # initialize parameters for ARUCO detection
+        # initialize parameters for ARUCO detection (for perspective correction)
         self.aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
         self.debug = debug
         self.file_type = False
         self.parameters = aruco.DetectorParameters_create()
+
+        self.record = False  # flag for whether the class should be generating a heatmap or not
+        self.cap_toggle_dict = {}  # dictionary storing whether a camera should be turned on or not
 
         self.cap_dict = {}  # store the OpenCV captures in a dictionary
         self.num_caps = 0
@@ -104,10 +107,21 @@ class ProcessingEngine:
             if cap.isOpened():
                 # Data structure of dictionary entries: (OpenCV capture, calibration boolean, transformation matrix)
                 self.cap_dict[i] = [cap, 0]  # 0 is a placeholder for the calibration matrix
+                self.cap_toggle_dict[i] = 1  # turn on the camera by default
             else:
                 self.num_caps = i
                 break
             i += 1
+
+    def cap_toggle(self, capNum, toggle):
+        """
+        Returns
+        :param capNum: index of camera being switched on or off
+        :param toggle: integer boolean (1 turns it on, 0 turns it off)
+        :return: None
+        """
+        self.cap_toggle_dict[capNum] = toggle
+        return None
 
     def calibrate(self, cap_num):
         """
@@ -236,6 +250,9 @@ class ProcessingEngine:
             while self.cap_dict[cap_num][1] == 0:  # not yet calibrated
                 frame = self.calibrate(cap_num)
                 return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
+        if self.cap_toggle_dict[int(cap_num)] == 0:
+            frame = frame * 0.5
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
 

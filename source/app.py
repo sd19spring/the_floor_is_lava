@@ -2,10 +2,9 @@
 Web application app
 """
 
-from flask import render_template, Response, request, json
+from flask import render_template, Response, request
 from web_classes import WebApplication
 from cv_classes import ProcessingEngine
-import time
 
 
 def feed(engine, cap_num):
@@ -23,11 +22,38 @@ def feed(engine, cap_num):
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(cap_num) + b'\r\n')
 
 
-def record_button_true_receiver(error=False):
-    # read json + reply
-    record = request.get_data()
-    print(record)
-    print('here')
+def record_button_receiver():
+    """
+    Listens for whether the button to trigger recording the footage on the web app is pressed, and instructs the engine
+    class accordingly.
+    :return: 'none'
+    """
+    record = request.get_data().decode()
+    if record == 'true':
+        engine.record = True
+    else:
+        engine.record = False
+
+    # return 'none' and not None because Flask doesn't like it when None is returned.
+    return 'none'
+
+
+def cap_switch():
+    """
+    Listens for whether the button to trigger recording the footage on the web app is pressed, and instructs the engine
+    class accordingly.
+    :return: 'none'
+    """
+    switch = request.get_data().decode()  # switch is a string that represents a dictionary
+    [capNum_str, toggle_str] = switch.split('&')
+    [_, capNum] = capNum_str.split('=')
+    [_, toggle] = toggle_str.split('=')
+    capNum = int(capNum)
+    toggle = int(toggle)
+
+    engine.cap_toggle(capNum, toggle)
+
+    # return 'none' and not None because Flask doesn't like it when None is returned.
     return 'none'
 
 
@@ -60,7 +86,7 @@ def eye(CAP_NUM):
 
 # Create a processing engine. Although it generally isn't good practice to do this in the body of the document, the
 # object needs to be a global instance so that only one is created no matter how many cameras are created. Also, the
-# methods of this class are accessed across multiple functions.
+# methods and attributes of this class are accessed across multiple functions in this file.
 engine = ProcessingEngine()
 
 if __name__ == "__main__":
@@ -73,7 +99,8 @@ if __name__ == "__main__":
         '/select_feeds': select_feeds,
         '/more_info': more_info,
         '/<CAP_NUM>': eye,
-        '/record_button_true_receiver': record_button_true_receiver}, post_only=['/record_button_true_receiver'])
+        '/record_button_receiver': record_button_receiver,
+        '/cap_switch': cap_switch})
 
-    # Beginning listening on `localhost`, port 3000
+    # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)

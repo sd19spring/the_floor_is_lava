@@ -45,6 +45,11 @@ body {
 	cursor: pointer;
 }
 
+.half {
+	width: 50%;
+	margin: auto;
+}
+
 .button:hover {
 	color: #fff;
  	text-shadow: none;
@@ -94,3 +99,19 @@ body {
 	border: 1rem;
 }
 
+.button_red {
+	background-color: darkred;
+	color: #fff;
+ 	text-shadow: none;
+	border-radius: 0.3rem;
+	cursor: pointer;
+}
+
+.button_red:hover {
+	color: #fff;
+ 	text-shadow: none;
+	background-color: #4C0000;
+	border-radius: 0.4rem;
+	cursor: pointer;
+	text-underline: none;
+}

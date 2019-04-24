@@ -49,7 +49,7 @@ class WebApplication(Flask):
         # the ProcessingEngine
         self.run(options.get('host', "127.0.0.1"), options.get('port', 3000), options, use_reloader=False)
 
-    def route(self, routes, post_only):
+    def route(self, routes):
         """ Registers each URL rule in routes to its specificed endpoint and response function. """
         for url, func in routes.items():
             self.add_url_rule(url, func.__name__, func, methods=['GET', 'POST'])
