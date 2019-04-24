@@ -2,25 +2,10 @@
 Web application app
 """
 
-from flask import render_template, Response, request, session, redirect, jsonify
+from flask import render_template, Response, request, json
 from web_classes import WebApplication
 from cv_classes import ProcessingEngine
 import time
-
-
-
-def index(error=False):
-    """ Renders the index HTML page. """
-    # Render the index page, showing the error message if something went wrong
-    return render_template('index.html', visibility=("visible" if error else "hidden"))
-
-
-def select_feeds(error=False):
-    return render_template('select_feeds.html', NUM_CAPS=engine.num_caps-1)
-
-
-def more_info(error=False):
-    return render_template('more_info.html', visibility=("visible" if error else "hidden"))
 
 
 def feed(engine, cap_num):
@@ -38,6 +23,28 @@ def feed(engine, cap_num):
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(cap_num) + b'\r\n')
 
 
+def record_button_true_receiver(error=False):
+    # read json + reply
+    record = request.get_data()
+    print(record)
+    print('here')
+    return 'none'
+
+
+def index(error=False):
+    """ Renders the index HTML page. """
+    # Render the index page, showing the error message if something went wrong
+    return render_template('index.html', visibility=("visible" if error else "hidden"))
+
+
+def select_feeds(error=False):
+    return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
+
+
+def more_info(error=False):
+    return render_template('more_info.html', visibility=("visible" if error else "hidden"))
+
+
 def eye(CAP_NUM):
     """ Returns a mixed multipart HTTP response containing streamed MJPEG data, pulled from
     the OpenCV image processor. """
@@ -50,12 +57,13 @@ def eye(CAP_NUM):
     except:
         return index(error=True)
 
+
 # Create a processing engine. Although it generally isn't good practice to do this in the body of the document, the
-# object needs to be a global instance so that only one is created no matter how many cameras are created.
+# object needs to be a global instance so that only one is created no matter how many cameras are created. Also, the
+# methods of this class are accessed across multiple functions.
 engine = ProcessingEngine()
 
 if __name__ == "__main__":
-
     # Create a new web application
     app = WebApplication("pedheatmap")
 
@@ -64,7 +72,8 @@ if __name__ == "__main__":
         '/': index,
         '/select_feeds': select_feeds,
         '/more_info': more_info,
-        '/<CAP_NUM>': eye})
+        '/<CAP_NUM>': eye,
+        '/record_button_true_receiver': record_button_true_receiver}, post_only=['/record_button_true_receiver'])
 
     # Beginning listening on `localhost`, port 3000
     app.listen(port=8080)

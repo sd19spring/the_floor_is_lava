@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
           integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
 </head>
 
 <body class="text-center">
@@ -21,7 +23,7 @@
         <div class="align-right", style="width: 30%; padding-top: 1rem">
             <h1>Welcome to the hub</h1>
             <p class="lead" style="text-align: left">See every camera connected to your computer. Choose which ones to ignore or keep for analysis. Click "perspective correct" for cameras that are pointed at an angle.</p>
-            <div class="cover button">I'm ready to record! ➡️</div>
+            <div class="cover button"><a id="recordButtonTrue">Create Heatmap ➡️</a></div>
         </div>
     </div>
     <footer class="mastfoot mt-auto">
@@ -36,22 +38,40 @@
         </div>
     </footer>
 </section>
-<script>
-    let i;
-    for (i = {{ NUM_CAPS }}; i >= 0; i--) {
-        // Create a new, plain <span> element
-        var frame = document.createElement("div");
-        var eye_str = '/' + i;
-        frame.setAttribute('class', 'capture_div');
-        frame.innerHTML = '<img src="' + eye_str + '" class="capture"/><div class="switch" style="text-align: center"><div class="cover button" style="width: 50%">Toggle on/off</div></div>';
-        // Get a reference to the element, before we want to insert the element
-        var sp2 = document.getElementById("childElement");
-        // Get a reference to the parent element
-        var parentDiv = sp2.parentNode;
-        // Insert the new element into the DOM before sp2
-        parentDiv.insertBefore(frame, sp2.nextSibling);
-    }
-</script>
-<script src="{{ url_for('static', filename='capture.js') }}"></script>
+    <script>
+        let i;
+        for (i = {{ NUM_CAPS }}; i >= 0; i--) {
+            // Create a new, plain <span> element
+            var frame = document.createElement("div");
+            var eye_str = '/' + i;
+            frame.setAttribute('class', 'capture_div');
+            frame.innerHTML = "<img src=" + eye_str + " class='capture'/><div class='cover button' style='width: 50%; margin: auto'>Toggle on/off</div>";
+            // Get a reference to the element, before we want to insert the element
+            var sp2 = document.getElementById("childElement");
+            // Get a reference to the parent element
+            var parentDiv = sp2.parentNode;
+            // Insert the new element into the DOM before sp2
+            parentDiv.insertBefore(frame, sp2.nextSibling);
+        }
+    </script>
+{#     Script to tell Python to start recording #}
+    <script type="text/javascript">
+        // setup some JSON to use
+        let record = 'true';
+
+        window.onload = function() {
+            // setup the button click
+            document.getElementById("recordButtonTrue").onclick = function() {
+                doWork()
+            };
+        };
+
+        function doWork() {
+            // ajax the JSON to the server
+            $.post("/record_button_true_receiver", {record: record});
+            // stop link reloading the page
+             event.preventDefault();
+        }
+    </script>
 </body>
 </html>
