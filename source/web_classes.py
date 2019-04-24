@@ -52,7 +52,4 @@ class WebApplication(Flask):
     def route(self, routes, post_only):
         """ Registers each URL rule in routes to its specificed endpoint and response function. """
         for url, func in routes.items():
-            if url not in post_only:
-                self.add_url_rule(url, func.__name__, func, methods=['GET', 'POST'])
-            else:
-                self.add_url_rule(url, func.__name__, func, methods=['POST'])
+            self.add_url_rule(url, func.__name__, func, methods=['GET', 'POST'])
