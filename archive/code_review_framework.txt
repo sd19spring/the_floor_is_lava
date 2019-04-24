@@ -1,3 +1,6 @@
+"""
+This file is the sample code we submitted for the code review framing assignment
+"""
 from imageai.Detection import VideoObjectDetection
 import os
 import numpy as np
