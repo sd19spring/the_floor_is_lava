@@ -10,21 +10,20 @@ Engineering in the spring of 2019.
 from flask import Flask
 import os
 from flask_session import Session
-from redis import Redis, ConnectionError
-from cv_classes import ProcessingEngine
+# from redis import Redis, ConnectionError
 
 
-def launch_redis():
-    """
-    Launches the redis server
-    :return: rs - Redis object
-    """
-    rs = Redis('localhost')
-    try:
-        rs.ping()
-        return rs
-    except ConnectionError:
-        return False
+# def launch_redis():
+#     """
+#     Launches the redis server
+#     :return: rs - Redis object
+#     """
+#     rs = Redis('localhost')
+#     try:
+#         rs.ping()
+#         return rs
+#     except ConnectionError:
+#         return False
 
 
 class WebApplication(Flask):
@@ -39,7 +38,6 @@ class WebApplication(Flask):
         # Set configuration variables
         self.debug = debug
         self.config['SECRET_KEY'] = os.urandom(16)
-        self.config['SESSION_REDIS'] = launch_redis()
         Session(self)  # for the cookies
 
     def listen(self, **options):
