@@ -45,14 +45,14 @@ function changeSwitch(url) {
 function muteCam(capNum) {
     if (muteDict[capNum] === 1) {
         // turn the camera off
-        $.post("/cap_switch", {capNum: capNum, record: 0}, changeButtonCam(capNum, muteDict[capNum], 'Mute',
+        $.post("/cap_switch", {capNum: capNum, record: 0}, changeButtonCam(capNum, muteDict[capNum], 'Unmute',
             'capToggle'));
         // stop link reloading the page
         event.preventDefault();
         muteDict[capNum] = 0;
     } else {
         // turn the camera on
-        $.post("/cap_switch", {capNum: capNum, record: 1}, changeButtonCam(capNum, muteDict[capNum], 'Unmute',
+        $.post("/cap_switch", {capNum: capNum, record: 1}, changeButtonCam(capNum, muteDict[capNum], 'Mute',
             'capToggle'));
         // stop link reloading the page
         event.preventDefault();
