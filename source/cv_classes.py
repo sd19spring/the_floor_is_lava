@@ -73,6 +73,19 @@ class ByteCapture:
         return None, self.bytes
 
 
+class Heatmap:
+    def __init__(self, cap_dict, num_caps):
+        self.heatmap_dict = {}
+        for i in range(num_caps):
+            cap = cap_dict[i][0]
+            _, frame = cap.read()
+            camera_shape = frame.shape
+            self.heatmap_dict[i] = np.zeros((camera_shape[1], camera_shape[0]))
+
+    def per_frame(self,  box_points, cap_num):
+        self.heatmap_dict[cap_num][box_points[0]:box_points[3],box_points[1]:box_points[2]] += 1
+
+
 class ProcessingEngine:
     """
     The backend class for image per-processing.
@@ -108,6 +121,9 @@ class ProcessingEngine:
                 self.num_caps = i
                 break
             i += 1
+
+        heatmap = Heatmap(self.cap_dict, self.num_caps)
+
 
     def cap_toggle(self, capNum, toggle):
         """
