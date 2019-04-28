@@ -83,6 +83,9 @@ class Heatmap:
             self.heatmap_dict[i] = np.zeros((camera_shape[1], camera_shape[0]))
 
     def per_frame(self,  box_points, cap_num):
+        pass
+
+    def add_to_heatmap(self, box_points):
         self.heatmap_dict[cap_num][box_points[0]:box_points[3],box_points[1]:box_points[2]] += 1
 
 
@@ -288,6 +291,7 @@ class ProcessingEngine:
         # if the camera is set to off, then dim the frame by x0.2
         if self.cap_dict[cap_num][3] == 0:
             frame = frame * 0.2
+
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
 
