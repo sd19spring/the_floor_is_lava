@@ -45,8 +45,8 @@ body {
 	cursor: pointer;
 }
 
-.half {
-	width: 50%;
+.forty {
+	width: 40%;
 	margin: auto;
 }
 
@@ -54,7 +54,7 @@ body {
 	color: #fff;
  	text-shadow: none;
 	background-color: #4f837f;
-	border-radius: 0.4rem;
+	border-radius: 0.3rem;
 	cursor: pointer;
 	text-underline: none;
 }
@@ -66,37 +66,17 @@ body {
 	border-radius: 0.3rem;
 	cursor: pointer;
 	text-underline: none;
+	padding: 0.5rem;
 }
 
 .button_small:hover {
-	color: #333333;
+	color: black;
  	text-shadow: none;
 	background-color: #C6E4E2;
-	border-radius: 0.4rem;
+	border-radius: 0.3rem;
 	cursor: pointer;
 	text-underline: none;
-}
-
-#error {
-	width: 30rem;
-	margin: 0.25rem auto 6rem auto;
-}
-
-.capture_div {
-	border: 10px;
-}
-
-.capture {
-	align-content: center;
-	border-radius: 1.5rem;
-	padding: 1rem;
-	max-width: 100%;
-}
-
-.switch {
-	align-content: center;
-	max-width: 100%;
-	border: 1rem;
+	padding: 0.5rem;
 }
 
 .button_red {
@@ -115,3 +95,49 @@ body {
 	cursor: pointer;
 	text-underline: none;
 }
+
+.button_red_small {
+	background-color: rgba(139, 0, 0, 0.33);
+	color: black;
+ 	text-shadow: none;
+	border-radius: 0.3rem;
+	cursor: pointer;
+	padding: 0.5rem;
+}
+
+.button_red_small:hover {
+	color: black;
+ 	text-shadow: none;
+	background-color: rgba(139, 0, 0, 0.54);
+	border-radius: 0.4rem;
+	cursor: pointer;
+	text-underline: none;
+	padding: 0.5rem;
+}
+
+
+#error {
+	width: 30rem;
+	margin: 0.25rem auto 6rem auto;
+}
+
+.capture_div {
+	border: 0;
+}
+
+.capture {
+	align-content: center;
+	border-radius: 2rem;
+	padding-top: 1rem;
+	padding-bottom: 1rem;
+	padding-right: 0.5rem;
+	padding-left: 0.5rem;
+	max-width: 100%;
+}
+
+.switch {
+	align-content: center;
+	max-width: 100%;
+	border: 1rem;
+}
+

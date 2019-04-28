@@ -19,7 +19,7 @@ def feed(engine, cap_num):
     # Motion JPEG.
     # Wrap the encoded frame in a multipart image section, to be inserted into the multipart HTTP response
     while True:
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(cap_num) + b'\r\n')
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(int(cap_num)) + b'\r\n')
 
 
 def record_button_receiver():
@@ -52,7 +52,25 @@ def cap_switch():
     toggle = int(toggle)
 
     engine.cap_toggle(capNum, toggle)
+    # return 'none' and not None because Flask doesn't like it when None is returned.
+    return 'none'
 
+
+def calib_switch():
+    """
+    Listens for whether the button to trigger the camera calibration process on the web app is pressed, and instructs
+    the engine class to act accordingly.
+    :return: 'none'
+    """
+    switch = request.get_data().decode()  # switch is a string that represents a dictionary
+    [capNum_str, toggle_str] = switch.split('&')
+    [_, capNum] = capNum_str.split('=')
+    [_, toggle] = toggle_str.split('=')
+    capNum = int(capNum)
+    toggle = 0 if int(toggle) == 1 else 1  # switch the integer value used; for simplicity in the javascript, 1 was used
+    # to indicate no calibration, but the engine class understands the opposite
+
+    engine.calib_toggle(capNum, toggle)
     # return 'none' and not None because Flask doesn't like it when None is returned.
     return 'none'
 
@@ -100,7 +118,8 @@ if __name__ == "__main__":
         '/more_info': more_info,
         '/<CAP_NUM>': eye,
         '/record_button_receiver': record_button_receiver,
-        '/cap_switch': cap_switch})
+        '/cap_switch': cap_switch,
+        '/calib_switch': calib_switch})
 
     # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)

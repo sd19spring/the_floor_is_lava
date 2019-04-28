@@ -11,25 +11,22 @@ import numpy as np
 from math import acos, cos, sin
 import time
 
-# for visualizing the corners of the markers
-colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
-
 
 def find_square_dest(square):
     """
     Infers what the calibration square would look like if it was orthogonal to the camera. This is set later as the
-    destination square: square_dest.
+    destination square: square_dest. The destination square is used for warping the camera perspective to a desireable
+    one.
 
     :param square: list of 4 tuples (coordinates)
     :return: np.float32 list of 4 tuples (coordinates)
-
     """
     # vector of bottom edge of the calibration square, placed at the origin
     bottom_edge_orig = np.float32([square[2][0] - square[3][0], square[2][1] - square[3][1]])
-    mbe = np.linalg.norm(bottom_edge_orig)  # magnitude of the bottom edge
+    mbe = np.linalg.norm(bottom_edge_orig)  # length (magnitude) of the bottom edge (mbe)
     unit_bottom_edge = bottom_edge_orig / mbe  # bottom edge vector changed to length of 1
     theta = abs(acos(unit_bottom_edge.dot(np.float32([1, 0]))))  # absolute angle between horizontal and bottom edge
-    # set the rotation matrix:
+    # set up the rotation matrix:
     rotation_matrix = np.float32([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
     # template for the destination square (to be modified by rotation matrix)
     orig_square_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
@@ -76,17 +73,33 @@ class ByteCapture:
         return None, self.bytes
 
 
+class Heatmap:
+    def __init__(self, cap_dict, num_caps):
+        self.heatmap_dict = {}
+        for i in range(num_caps):
+            cap = cap_dict[i][0]
+            _, frame = cap.read()
+            camera_shape = frame.shape
+            self.heatmap_dict[i] = np.zeros((camera_shape[1], camera_shape[0]))
+
+    def per_frame(self,  box_points, cap_num):
+        pass
+
+    def add_to_heatmap(self, box_points):
+        self.heatmap_dict[cap_num][box_points[0]:box_points[3],box_points[1]:box_points[2]] += 1
+
+
 class ProcessingEngine:
     """
     The backend class for image per-processing.
     """
 
-    def __init__(self, threshold=60, debug=False):
+    def __init__(self, threshold=30, debug=False):
 
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
-        self.matrix_list = []
-        self.threshold = threshold
+        self.threshold = threshold  # minimum number of frames used to perform calibration
+        self.matrix_list = []  # used to store matrices during calibration
 
         # initialize parameters for ARUCO detection (for perspective correction)
         self.aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
@@ -95,32 +108,47 @@ class ProcessingEngine:
         self.parameters = aruco.DetectorParameters_create()
 
         self.record = False  # flag for whether the class should be generating a heatmap or not
-        self.cap_toggle_dict = {}  # dictionary storing whether a camera should be turned on or not
 
         self.cap_dict = {}  # store the OpenCV captures in a dictionary
-        self.num_caps = 0
+        self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
         # add all of the OpenCV captures to self.cap_dict:
         i = 0
-        while True:  # support up to 5 different cameras
+        while i < 5:  # support up to 5 different cameras
             cap = cv2.VideoCapture(i)
 
             if cap.isOpened():
-                # Data structure of dictionary entries: (OpenCV capture, calibration boolean, transformation matrix)
-                self.cap_dict[i] = [cap, 0]  # 0 is a placeholder for the calibration matrix
-                self.cap_toggle_dict[i] = 1  # turn on the camera by default
-            else:
+                # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
+                # for the calibration matrix, and boolean for whether the camera is to be used]
+                self.cap_dict[i] = [cap, 0, 0, 1]
+            else:  # all the cameras that can be detected have been, so break the loop:
                 self.num_caps = i
                 break
             i += 1
 
+        heatmap = Heatmap(self.cap_dict, self.num_caps)
+
+
     def cap_toggle(self, capNum, toggle):
         """
-        Returns
+        Switches whether a camera is used for the heatmap building or not
         :param capNum: index of camera being switched on or off
         :param toggle: integer boolean (1 turns it on, 0 turns it off)
         :return: None
         """
-        self.cap_toggle_dict[capNum] = toggle
+        self.cap_dict[capNum][3] = toggle
+        return None
+
+    def calib_toggle(self, capNum, toggle):
+        """
+        Switches whether a camera is being calibrated or not for the heatmap building or not
+        :param capNum: index of camera being switched on or off
+        :param toggle: integer boolean (1 turns it on, 0 turns it off)
+        :return: None
+        """
+
+        self.cap_dict[capNum][1] = toggle
+        if toggle == 0:  # reset the calibration matrix if the perspective correction is being turned off
+            self.cap_dict[capNum][2] = 0
         return None
 
     def calibrate(self, cap_num):
@@ -135,6 +163,10 @@ class ProcessingEngine:
 
         :return: frame or frame converted to bytes, depending on use case
         """
+        if self.debug:
+            # for visualizing the corners of the markers in debug mode
+            colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
+
         cap = self.cap_dict[cap_num][0]  # select the camera to be calibrated
         _, frame = cap.read()
 
@@ -151,24 +183,21 @@ class ProcessingEngine:
             #             been captured for the average matrix to be calculated
             self.matrix_list = []  # reset the matrix_list if this is the case
 
+        # visualize the process of the calibration process: n frames calibrated / self.threshold needed
+        cv2.rectangle(frame, (0, frame_y - 30), (int(self.n * frame_x / self.threshold), frame_y), (157, 161, 100),
+                          -1)
+
         if len(markers) < 4:  # look for one marker sheet
             cv2.putText(frame, "A full calibration sheet isn't visible.", (frame_x_c - int(frame_x / 10), frame_y - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)  # apply the text
-
-            if self.debug:  # visualizing the progress of the calibration
-                cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0),
-                              -1)
+                        cv2.FONT_HERSHEY_COMPLEX, 0.6, (255, 255, 255), 2)  # apply the text
             return frame
 
-        elif len(markers) > 4:  # handle the edge case wehre multiple calibration sheets are in frame
+        elif len(markers) > 4:  # handle the edge case where multiple calibration sheets are in frame
 
             cv2.putText(frame, "Whoa that's too many markers! Please only use one calibration sheet at a time.",
-                        (frame_x_c - int(frame_x / 6), frame_y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                        (frame_x_c - int(frame_x / 6), frame_y - 15), cv2.FONT_HERSHEY_COMPLEX, 0.6,
                         (255, 255, 255), 2)  # apply the text
 
-            if self.debug:  # visualizing the progress of the calibration
-                cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0),
-                              -1)
             return frame
 
         else:  # one calibration sheet has been detected
@@ -179,18 +208,6 @@ class ProcessingEngine:
             markers_dict = {}
             for i in range(4):
                 markers_dict[ids[i][0]] = markers[i][0]
-
-            # For visualization of the sheet: When oriented upright, the corners of the markers will be listed in this
-            # order: 1) Top-left (Blue)  2) Top-right (Green)  3) Bottom-right (Red)  4) Bottom left (Cyan)
-            if self.debug:
-                for i in range(4):
-                    marker = markers_dict[i]
-                    # print(markers)
-                    for j in range(4):
-                        corner = marker[j]
-                        cv2.circle(frame, tuple(corner), 10, colors[j], -1)
-                    cv2.putText(frame, "{}".format(i), (int(marker[0][0] + 20), int(marker[0][1] + 20)),
-                                cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 255), 2)
 
             # To calculate the required perspective shift, we will need to find how exactly the calibration square
             # skewed. The coordinates of this square as found from a grid of 4 ARUCO markers arranged in a square shape
@@ -203,8 +220,24 @@ class ProcessingEngine:
             # infer what the calibration square should look like if the camera was orthogonal
             square_dest = find_square_dest(square)
 
-            # visualize the destination square square_dest (should appear distorted on the perspective-corrected frame)
+            ##### Visualization
             if self.debug:
+                # colors that will be used to test whether the order of the stored data is correct
+                colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
+
+                # When in debug mode, the box and its corners will be shown and colorcoded in this order:
+                # 1) Top-left (Blue)  2) Top-right (Green)  3) Bottom-right (Red)  4) Bottom left (Cyan)
+                for i in range(4):
+                    marker = markers_dict[i]
+                    # print(markers)
+                    if self.debug:
+                        for j in range(4):
+                            cv2.circle(frame, tuple(marker[j]), 10, colors[j], -1)
+                        cv2.putText(frame, "{}".format(i), (int(marker[0][0] + 20), int(marker[0][1] + 20)),
+                                    cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 255), 2)
+
+                # visualize the detected and destination square square_dest (should appear distorted on
+                # the perspective-corrected frame):
                 for i in range(4):
                     if i is not 3:
                         cv2.line(frame, square[i], square[i + 1], colors[i], 3)
@@ -213,9 +246,12 @@ class ProcessingEngine:
                         cv2.line(frame, square[i], square[0], colors[i], 3)
                         cv2.line(frame, tuple(square_dest[i]), tuple(square_dest[0]), colors[i], 3)
 
-                # visualize the process of the calibration process: n frames calibrated / self.threshold needed
-                cv2.rectangle(frame, (0, frame_y - 10), (int(self.n * frame_x / self.threshold), frame_y), (0, 255, 0),
-                              -1)
+            else: # even if not in debug mode, highlight the detected marker square
+                for i in range(4):
+                    if i is not 3:
+                        cv2.line(frame, square[i], square[i + 1], (157, 161, 100), 3)
+                    else:
+                        cv2.line(frame, square[i], square[0], (157, 161, 100), 3)
 
             matrix = cv2.getPerspectiveTransform(np.float32(square), square_dest)  # get the transformation matrix
             self.matrix_list.append(matrix)  # record the transformation matrix for this frame
@@ -227,7 +263,7 @@ class ProcessingEngine:
                 calibration_matrix = np.float32()
                 for i in range(self.threshold):  # self.matrix_list should be self.threshold long
                     calibration_matrix = calibration_matrix + self.matrix_list[i]
-                self.cap_dict[cap_num][1] = calibration_matrix / self.threshold
+                self.cap_dict[cap_num][2] = calibration_matrix / self.threshold
                 return frame
             else:
                 self.stopwatch.log_time()  # log the time
@@ -240,22 +276,23 @@ class ProcessingEngine:
         :param: calibrate - boolean for whether the frame should be perspective corrected
         :return: frame or frame converted to bytes, depending on use case
         """
-        cap = self.cap_dict.get(int(cap_num))[0]
-
+        cap = self.cap_dict.get(cap_num)[0]
         _, frame = cap.read()
 
-        if calibrate:
-            if self.cap_dict[cap_num][1] != 0:  # already calibrated
-                frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][1], (frame.shape[1], frame.shape[0]))
-            while self.cap_dict[cap_num][1] == 0:  # not yet calibrated
-                frame = self.calibrate(cap_num)
-                return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+        if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
+            if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
+                # becomes the calibration matrix, the truth value of a multi-element array is ambiguous
+                frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (frame.shape[1], frame.shape[0]))
+            else:  # perform calibration
+                while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
+                    frame = self.calibrate(cap_num)
+                    return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
-        if self.cap_toggle_dict[int(cap_num)] == 0:
-            frame = frame * 0.5
+        # if the camera is set to off, then dim the frame by x0.2
+        if self.cap_dict[cap_num][3] == 0:
+            frame = frame * 0.2
+
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
-
-
 
 
 if __name__ == "__main__":
