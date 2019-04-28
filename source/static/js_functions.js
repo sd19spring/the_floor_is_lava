@@ -37,7 +37,7 @@ function changeSwitch(url) {
         switchBool = 'true';
     }
 
-    $.post(url, switchBool, changeButtonRecording(switchBool));
+    $.post(url, switchBool, changeSwitchButton(switchBool));
     // stop link reloading the page
     event.preventDefault();
 }
@@ -78,7 +78,8 @@ function calibCam(capNum) {
     }
 }
 
-function changeButtonRecording(switchBool) {
+
+function changeSwitchButton(switchBool) {
     // Used to change the appearance and properties of the button used to toggle the recording of the heatmap.
     // switchBool is a global integer boolean that keeps track of the current state of the button.
     if (switchBool === 'true') {
