@@ -28,6 +28,7 @@ function createDivs(numCaps) {
 // these need to be globally accessible
 let switchBool = '';
 let calibDict = {};
+let firstTimeFlag = false;  // boolean for whether the record button has been pressed yet
 
 function changeSwitch(url) {
     // ajax the JSON to the server
@@ -36,7 +37,10 @@ function changeSwitch(url) {
     } else {
         switchBool = 'true';
     }
-
+    if (switchBool === true && firstTimeFlag === true) {
+        document.getElementById('result').style.visibility = "visible";
+    }
+    firstTimeFlag = true;
     $.post(url, switchBool, changeSwitchButton(switchBool));
     // stop link reloading the page
     event.preventDefault();
