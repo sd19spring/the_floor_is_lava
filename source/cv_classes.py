@@ -127,7 +127,6 @@ class ProcessingEngine:
 
         heatmap = Heatmap(self.cap_dict, self.num_caps)
 
-
     def cap_toggle(self, capNum, toggle):
         """
         Switches whether a camera is used for the heatmap building or not
@@ -293,6 +292,7 @@ class ProcessingEngine:
             frame = frame * 0.2
 
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
 
 
 if __name__ == "__main__":
