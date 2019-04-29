@@ -11,6 +11,12 @@ import numpy as np
 from math import acos, cos, sin
 import time
 
+from imageai.Detection import ObjectDetection
+# from imageai.Detection import VideoObjectDetection
+import os
+from matplotlib import pyplot as plt
+
+execution_path = os.getcwd()
 
 def find_square_dest(square):
     """
@@ -72,7 +78,6 @@ class ByteCapture:
         """ Returns the stored byte sequence. """
         return None, self.bytes
 
-
 class Heatmap:
     def __init__(self, cap_dict, num_caps):
         self.heatmap_dict = {}
@@ -82,12 +87,14 @@ class Heatmap:
             camera_shape = frame.shape
             self.heatmap_dict[i] = np.zeros((camera_shape[1], camera_shape[0]))
 
-    def per_frame(self,  box_points, cap_num):
-        pass
-
-    def add_to_heatmap(self, box_points):
+    def add_heatmap(self, cap_num, box_points):
         self.heatmap_dict[cap_num][box_points[0]:box_points[3],box_points[1]:box_points[2]] += 1
 
+    def show_heatmap(self):
+        #draw map
+        plt.imshow(self.heatmap_dict, cmap='hot', interpolation='nearest')
+        plt.show()
+        plt.savefig('matrix.jpg')
 
 class ProcessingEngine:
     """
@@ -95,6 +102,13 @@ class ProcessingEngine:
     """
 
     def __init__(self, threshold=30, debug=False):
+
+        self.detector = ObjectDetection()
+        # self.detector = VideoObjectDetection()
+        self.detector.setModelTypeAsYOLOv3()
+        self.detector.setModelPath( os.path.join(execution_path , "yolo.h5"))
+        self.detector.loadModel(detection_speed = "flash")
+
 
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
@@ -111,22 +125,23 @@ class ProcessingEngine:
 
         self.cap_dict = {}  # store the OpenCV captures in a dictionary
         self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
+
+
         # add all of the OpenCV captures to self.cap_dict:
-        i = 0
-        while i < 5:  # support up to 5 different cameras
-            cap = cv2.VideoCapture(i)
+        # i = 0
+        # while i < 5:  # support up to 5 different cameras
+        #     cap = cv2.VideoCapture(i)
+        #
+        #     if cap.isOpened():
+        #         # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
+        #         # for the calibration matrix, and boolean for whether the camera is to be used]
+        #         self.cap_dict[i] = [cap, 0, 0, 1]
+        #     else:  # all the cameras that can be detected have been, so break the loop:
+        #         self.num_caps = i
+        #         break
+        #     i += 1
 
-            if cap.isOpened():
-                # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
-                # for the calibration matrix, and boolean for whether the camera is to be used]
-                self.cap_dict[i] = [cap, 0, 0, 1]
-            else:  # all the cameras that can be detected have been, so break the loop:
-                self.num_caps = i
-                break
-            i += 1
-
-        heatmap = Heatmap(self.cap_dict, self.num_caps)
-
+        self.heatmap = Heatmap(self.cap_dict, self.num_caps)
 
     def cap_toggle(self, capNum, toggle):
         """
@@ -279,6 +294,11 @@ class ProcessingEngine:
         cap = self.cap_dict.get(cap_num)[0]
         _, frame = cap.read()
 
+        custom_objects = self.detector.CustomObjects(person=True)
+        detections = self.detector.detectCustomObjectsFromImage(custom_objects = custom_objects, input_image = frame, minimum_percentage_probability = 30)
+        # detections = self.detector.detectCustomObjectsFromVideo(camera_input = cap, frames_per_second=20, log_progress=True, minimum_percentage_probability=40 )
+
+
         if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
             if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
                 # becomes the calibration matrix, the truth value of a multi-element array is ambiguous
@@ -293,6 +313,21 @@ class ProcessingEngine:
             frame = frame * 0.2
 
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
+execution_path = os.getcwd()
+
+def forFrame(frame_number, output_array, output_count, detected_frame):
+
+    print("FOR FRAME " , frame_number)
+    print("Output for each object : ", output_array)
+    print("Output count for unique objects : ", output_count)
+    print("Returned Objects is : ", type(detected_frame))
+    print("------------END OF A FRAME --------------")
+
+    list_of_box_points = []
+    for object in output_array:
+        list_of_box_points.append(object['box_points'])
+    return (list_of_box_points)
 
 
 if __name__ == "__main__":
