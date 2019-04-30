@@ -14,6 +14,7 @@ import numpy as np
 import time
 import os
 from matplotlib import pyplot as plt
+import threading
 
 import os
 from matplotlib import pyplot as plt
@@ -180,14 +181,6 @@ class ProcessingEngine:
         weightsPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.weights"])
         configPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.cfg"])
 
-        # load our YOLO object detector trained on COCO dataset (80 classes)
-        print("[INFO] loading YOLO from disk...")
-        self.net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
-
-        # determine only the *output* layer names that we need from YOLO
-        self.ln = self.net.getLayerNames()
-        self.ln = [self.ln[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
-
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
         self.threshold = threshold  # minimum number of frames used to perform calibration
@@ -202,17 +195,27 @@ class ProcessingEngine:
         self.record = False  # flag for whether the class should be generating a heatmap or not
 
         self.cap_dict = {}  # store the OpenCV captures in a dictionary
+        self.detect_dict = {}  # store detected outputs in a dictionary
         self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
 
         # add all of the OpenCV captures to self.cap_dict:
         i = 0
         while i < 5:  # support up to 5 different cameras
             cap = cv2.VideoCapture(i)
-
             if cap.isOpened():
                 # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
                 # for the calibration matrix, and boolean for whether the camera is to be used]
                 self.cap_dict[i] = [cap, 0, 0, 1]
+                print("[INFO] loading YOLO from disk for camera {}...".format(i))
+                self.detect_dict[i] = cv2.dnn.readNetFromDarknet(configPath, weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
+                print("[INFO] finished loading YOLO for camera {}...".format(i))
+                if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
+                    #  the at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
+                    # be initialized.
+
+                    # determine only the *output* layer names that we need from YOLO
+                    self.ln = self.detect_dict[i].getLayerNames()
+                    self.ln = [self.ln[i[0] - 1] for i in self.detect_dict[i].getUnconnectedOutLayers()]
             else:  # all the cameras that can be detected have been, so break the loop:
                 self.num_caps = i
                 break
@@ -368,19 +371,27 @@ class ProcessingEngine:
         :param: calibrate - boolean for whether the frame should be perspective corrected
         :return: frame or frame converted to bytes, depending on use case
         """
-        cap = self.cap_dict.get(cap_num)[0]
+        # if the camera is set to off, then dim the frame by x0.2
+
+        cap = self.cap_dict.get(cap_num)[0]  # select the camera
         _, frame = cap.read()
+
+        if self.cap_dict[cap_num][3] == 0:
+            frame = frame * 0.2
+            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+        
+        net = self.detect_dict[cap_num]  # select the image processor (net)
 
         (H, W) = frame.shape[:2]
 
+        # pre-process the image for passing it into the YOLO model
         blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (128, 128),
                                      swapRB=True, crop=False)
 
-        self.net.setInput(blob)
-        layerOutputs = self.net.forward(self.ln)
-
+        # run detection on the frame:
+        net.setInput(blob)
+        layerOutputs = net.forward(self.ln)
         boxes, frame = parse_detected(frame, W, H, layerOutputs, self.LABELS)
-        print(boxes)
 
         for i in range(len(boxes)):
             self.heatmap.add_heatmap(cap_num, boxes[i])
@@ -393,10 +404,6 @@ class ProcessingEngine:
                 while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
                     frame = self.calibrate(cap_num)
                     return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
-
-        # if the camera is set to off, then dim the frame by x0.2
-        if self.cap_dict[cap_num][3] == 0:
-            frame = frame * 0.2
 
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
