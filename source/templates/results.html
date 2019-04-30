@@ -1,10 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="A computer vision tool for retailers to optimize store layouts.">
+    <meta name="author" content="Duncan Mazza">
+    <title>A Pedestrian Heatmap Utility</title>
+    <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="{{ url_for('static', filename='results_functions.js') }}"></script>
+
 </head>
-<body>
-$END$
+
+<body class="text-center">
+<section class="container d-flex p-3 mx-auto flex-column">
+    <div class="row">
+        <div class="align-left" style="width: 60%; align-content: center">
+            <div id="childElement"></div>
+        </div>
+        <div class="align-center" style="width: 10%"></div>
+        <div class="align-left" style="width: 30%; padding-top: 1rem">
+            <h1 style="font-weight: bold; font-size: 2rem">Here are the heatmaps!</h1>
+            <p class="fa-paragraph" style="text-align: left">
+                Each camera's generated heatmap is shown below. If the code was able to compile one heatmap by stitching
+                each individual one together, that will be shown too.
+            </p>
+            <a href="/select_feeds"><div class="cover button" style="width: 100%">Start Over ↩️</div></a>
+            <br>
+            <a class="cover button_small" href="/">Return to Home 🏠️</a>
+        </div>
+    </div>
+    <footer class="mastfoot mt-auto">
+        <div class="inner"><br>
+            <p>Made with
+                <svg width="14" height="12">
+                    <path d="M1.014.994a3.335 3.335 0 0 0 0 4.789l5.982 5.884 5.99-5.877a3.334 3.334 0 0 0 0-4.789 3.49
+                    3.49 0 0 0-4.88 0L7.002 2.083 5.894.995a3.49 3.49 0 0 0-4.88 0z"
+                          fill="#EF0107" fill-rule="evenodd"></path>
+                </svg>
+                at Olin, by Michael, Nick, Gabriella, and Duncan.a
+            </p>
+        </div>
+    </footer>
+</section>
+    <script>
+        createDivs({{ NUM_CAPS }})
+    </script>
 </body>
 </html>
