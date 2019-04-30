@@ -9,7 +9,7 @@ function createDivs(numCaps) {
         var frame = document.createElement("div");
         var eye_str = '/' + i;
         frame.setAttribute('class', 'capture_div');
-        frame.innerHTML = "<img alt='Camera frame' src=" + eye_str + " class='capture'/>" +
+        frame.innerHTML = "<img alt='[loading camera...]' src=" + eye_str + " class='capture'/>" +
             "<div class='row'><div onclick='muteCam(" + i + ")' id='capToggle" + i + "' " +
             "class='cover button_small forty' " + ">Mute</div>" + "<div class='cover button_small forty' " +
             "id='calibrateToggle" + i + "' onclick='calibCam(" + i + ")'>Calibrate</div></div>";
