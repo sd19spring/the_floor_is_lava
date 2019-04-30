@@ -37,8 +37,10 @@ function changeSwitch(url) {
     } else {
         switchBool = 'true';
     }
-    if (switchBool === true && firstTimeFlag === true) {
+    if (switchBool === 'false' && firstTimeFlag === true) {
         document.getElementById('result').style.visibility = "visible";
+    } else {
+        document.getElementById('result').style.visibility = "hidden";
     }
     firstTimeFlag = true;
     $.post(url, switchBool, changeSwitchButton(switchBool));
@@ -90,7 +92,7 @@ function changeSwitchButton(switchBool) {
         document.getElementById("switch").innerHTML = "<a>Stop Recording</a>";
         document.getElementById("switch").className = "cover button_red";
     } else {
-        document.getElementById("switch").innerHTML = "<a>Create Heatmap ➡️</a>";
+        document.getElementById("switch").innerHTML = "<a>Create Heatmap 🔨️</a>";
         document.getElementById("switch").className = "cover button";
     }
 }
