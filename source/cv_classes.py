@@ -7,16 +7,21 @@ Contains all the classes used for computer vision and backend processing.
 
 import cv2
 import cv2.aruco as aruco
-import numpy as np
+
 from math import acos, cos, sin
 import time
+import numpy as np
+import time
+import os
+from matplotlib import pyplot as plt
 
-from imageai.Detection import ObjectDetection
-# from imageai.Detection import VideoObjectDetection
 import os
 from matplotlib import pyplot as plt
 
 execution_path = os.getcwd()
+
+DETECTION_THRESHOLD = 0.6
+
 
 def find_square_dest(square):
     """
@@ -78,6 +83,7 @@ class ByteCapture:
         """ Returns the stored byte sequence. """
         return None, self.bytes
 
+
 class Heatmap:
     def __init__(self, cap_dict, num_caps):
         self.heatmap_dict = {}
@@ -88,13 +94,77 @@ class Heatmap:
             self.heatmap_dict[i] = np.zeros((camera_shape[1], camera_shape[0]))
 
     def add_heatmap(self, cap_num, box_points):
-        self.heatmap_dict[cap_num][box_points[0]:box_points[3],box_points[1]:box_points[2]] += 1
+        self.heatmap_dict[cap_num][box_points[1]:box_points[2], box_points[0]:box_points[3]] += 1
 
-    def show_heatmap(self):
-        #draw map
-        plt.imshow(self.heatmap_dict, cmap='hot', interpolation='nearest')
+    def show_heatmap(self, cap_num):
+        # draw map
+        plt.imshow(self.heatmap_dict[cap_num], cmap='hot', interpolation='nearest')
         plt.show()
         plt.savefig('matrix.jpg')
+
+
+def parse_detected(frame, W, H, layerOutputs, LABELS):
+    boxes = []
+    confidences = []
+    classIDs = []
+
+    # loop over each of the layer outputs
+    for output in layerOutputs:
+        # loop over each of the detections
+        for detection in output:
+            # extract the class ID and confidence (i.e., probability) of
+            # the current object detection
+            scores = detection[5:]
+            classID = np.argmax(scores)
+
+            # TODO: Fix pls
+            # if classID != 'person':
+            #     continue
+
+            confidence = scores[classID]
+
+            # filter out weak predictions by ensuring the detected
+            # probability is greater than the minimum probability
+            if confidence > DETECTION_THRESHOLD:
+                # scale the bounding box coordinates back relative to the
+                # size of the image, keeping in mind that YOLO actually
+                # returns the center (x, y)-coordinates of the bounding
+                # box followed by the boxes' width and height
+                box = detection[0:4] * np.array([W, H, W, H])
+                (centerX, centerY, width, height) = box.astype("int")
+
+                # use the center (x, y)-coordinates to derive the top and
+                # and left corner of the bounding box
+                x = int(centerX - (width / 2))
+                y = int(centerY - (height / 2))
+
+                # update our list of bounding box coordinates, confidences,
+                # and class IDs
+                boxes.append([x, y, int(width), int(height)])
+                confidences.append(float(confidence))
+                classIDs.append(classID)
+
+    # apply non-maxima suppression to suppress weak, overlapping bounding
+    # boxes
+    idxs = cv2.dnn.NMSBoxes(boxes, confidences, DETECTION_THRESHOLD, 0.3)
+
+    # ensure at least one detection exists
+    if len(idxs) > 0:
+        # loop over the indexes we are keeping
+        for i in idxs.flatten():
+            # extract the bounding box coordinates
+            (x, y) = (boxes[i][0], boxes[i][1])
+            (w, h) = (boxes[i][2], boxes[i][3])
+
+            # draw a bounding box rectangle and label on the image
+            color = (157, 161, 100)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+            text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
+            cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, color, 2)
+    frame_copy = frame
+    return boxes, frame_copy
+
 
 class ProcessingEngine:
     """
@@ -102,13 +172,21 @@ class ProcessingEngine:
     """
 
     def __init__(self, threshold=30, debug=False):
+        # load the COCO class labels our YOLO model was trained on
+        labelsPath = os.path.sep.join(["yolo-coco", "coco.names"])
+        self.LABELS = open(labelsPath).read().strip().split("\n")
 
-        self.detector = ObjectDetection()
-        # self.detector = VideoObjectDetection()
-        self.detector.setModelTypeAsYOLOv3()
-        self.detector.setModelPath( os.path.join(execution_path , "yolo.h5"))
-        self.detector.loadModel(detection_speed = "flash")
+        # derive the paths to the YOLO weights and model configuration
+        weightsPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.weights"])
+        configPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.cfg"])
 
+        # load our YOLO object detector trained on COCO dataset (80 classes)
+        print("[INFO] loading YOLO from disk...")
+        self.net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
+
+        # determine only the *output* layer names that we need from YOLO
+        self.ln = self.net.getLayerNames()
+        self.ln = [self.ln[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
 
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
@@ -126,20 +204,19 @@ class ProcessingEngine:
         self.cap_dict = {}  # store the OpenCV captures in a dictionary
         self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
 
-
         # add all of the OpenCV captures to self.cap_dict:
-        # i = 0
-        # while i < 5:  # support up to 5 different cameras
-        #     cap = cv2.VideoCapture(i)
-        #
-        #     if cap.isOpened():
-        #         # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
-        #         # for the calibration matrix, and boolean for whether the camera is to be used]
-        #         self.cap_dict[i] = [cap, 0, 0, 1]
-        #     else:  # all the cameras that can be detected have been, so break the loop:
-        #         self.num_caps = i
-        #         break
-        #     i += 1
+        i = 0
+        while i < 5:  # support up to 5 different cameras
+            cap = cv2.VideoCapture(i)
+
+            if cap.isOpened():
+                # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
+                # for the calibration matrix, and boolean for whether the camera is to be used]
+                self.cap_dict[i] = [cap, 0, 0, 1]
+            else:  # all the cameras that can be detected have been, so break the loop:
+                self.num_caps = i
+                break
+            i += 1
 
         self.heatmap = Heatmap(self.cap_dict, self.num_caps)
 
@@ -200,7 +277,7 @@ class ProcessingEngine:
 
         # visualize the process of the calibration process: n frames calibrated / self.threshold needed
         cv2.rectangle(frame, (0, frame_y - 30), (int(self.n * frame_x / self.threshold), frame_y), (157, 161, 100),
-                          -1)
+                      -1)
 
         if len(markers) < 4:  # look for one marker sheet
             cv2.putText(frame, "A full calibration sheet isn't visible.", (frame_x_c - int(frame_x / 10), frame_y - 15),
@@ -261,7 +338,7 @@ class ProcessingEngine:
                         cv2.line(frame, square[i], square[0], colors[i], 3)
                         cv2.line(frame, tuple(square_dest[i]), tuple(square_dest[0]), colors[i], 3)
 
-            else: # even if not in debug mode, highlight the detected marker square
+            else:  # even if not in debug mode, highlight the detected marker square
                 for i in range(4):
                     if i is not 3:
                         cv2.line(frame, square[i], square[i + 1], (157, 161, 100), 3)
@@ -294,10 +371,19 @@ class ProcessingEngine:
         cap = self.cap_dict.get(cap_num)[0]
         _, frame = cap.read()
 
-        custom_objects = self.detector.CustomObjects(person=True)
-        detections = self.detector.detectCustomObjectsFromImage(custom_objects = custom_objects, input_image = frame, minimum_percentage_probability = 30)
-        # detections = self.detector.detectCustomObjectsFromVideo(camera_input = cap, frames_per_second=20, log_progress=True, minimum_percentage_probability=40 )
+        (H, W) = frame.shape[:2]
 
+        blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (128, 128),
+                                     swapRB=True, crop=False)
+
+        self.net.setInput(blob)
+        layerOutputs = self.net.forward(self.ln)
+
+        boxes, frame = parse_detected(frame, W, H, layerOutputs, self.LABELS)
+        print(boxes)
+
+        for i in range(len(boxes)):
+            self.heatmap.add_heatmap(cap_num, boxes[i])
 
         if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
             if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
@@ -314,22 +400,6 @@ class ProcessingEngine:
 
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
-execution_path = os.getcwd()
-
-def forFrame(frame_number, output_array, output_count, detected_frame):
-
-    print("FOR FRAME " , frame_number)
-    print("Output for each object : ", output_array)
-    print("Output count for unique objects : ", output_count)
-    print("Returned Objects is : ", type(detected_frame))
-    print("------------END OF A FRAME --------------")
-
-    list_of_box_points = []
-    for object in output_array:
-        list_of_box_points.append(object['box_points'])
-    return (list_of_box_points)
-
-
 
 if __name__ == "__main__":
     engine = ProcessingEngine(debug=True)
@@ -340,4 +410,7 @@ if __name__ == "__main__":
             frame = engine.get_frame(cap_num, calibrate=True)
             cv2.imshow("frame {}".format(cap_num), frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                engine.heatmap.show_heatmap(cap_num)
                 break
+
+
