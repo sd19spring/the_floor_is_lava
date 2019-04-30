@@ -25,6 +25,9 @@ p {
   margin:auto;
   width:95%;
 }
+ol {
+  font:25pt tahoma;
+}
 nav {
   font: bold 30pt tahoma;
   color: white;
