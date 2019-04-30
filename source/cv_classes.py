@@ -104,7 +104,16 @@ class Heatmap:
         plt.savefig('matrix.jpg')
 
 
-def parse_detected(frame, W, H, layerOutputs, LABELS):
+def parse_detected(frame, w, h, layerOutputs, LABELS):
+    """
+
+    :param frame: input frame to the object detection
+    :param w: width of the frame
+    :param h: height of the frame
+    :param layerOutputs: output from the object detection
+    :param LABELS: labels for the YOLO model
+    :return: boxes, frame_copy: bounding boxes for the detected people, a copy of the frame with bounding boxes drawn
+    """
     boxes = []
     confidences = []
     classIDs = []
@@ -131,7 +140,7 @@ def parse_detected(frame, W, H, layerOutputs, LABELS):
                 # size of the image, keeping in mind that YOLO actually
                 # returns the center (x, y)-coordinates of the bounding
                 # box followed by the boxes' width and height
-                box = detection[0:4] * np.array([W, H, W, H])
+                box = detection[0:4] * np.array([w, h, w, h])
                 (centerX, centerY, width, height) = box.astype("int")
 
                 # use the center (x, y)-coordinates to derive the top and
@@ -153,16 +162,20 @@ def parse_detected(frame, W, H, layerOutputs, LABELS):
     if len(idxs) > 0:
         # loop over the indexes we are keeping
         for i in idxs.flatten():
-            # extract the bounding box coordinates
-            (x, y) = (boxes[i][0], boxes[i][1])
-            (w, h) = (boxes[i][2], boxes[i][3])
+            if LABELS[classIDs[i]] != 'person':
+                frame_copy = frame
+                return [], frame_copy
+            else:
+                # extract the bounding box coordinates
+                (x, y) = (boxes[i][0], boxes[i][1])
+                (w, h) = (boxes[i][2], boxes[i][3])
 
-            # draw a bounding box rectangle and label on the image
-            color = (157, 161, 100)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-            text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
-            cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5, color, 2)
+                # draw a bounding box rectangle and label on the image
+                color = (157, 161, 100)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+                text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
+                cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5, color, 2)
     frame_copy = frame
     return boxes, frame_copy
 
