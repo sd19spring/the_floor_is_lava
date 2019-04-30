@@ -198,6 +198,9 @@ class ProcessingEngine:
         self.detect_dict = {}  # store detected outputs in a dictionary
         self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
 
+        self.cap_num_dict= {}
+
+
         # add all of the OpenCV captures to self.cap_dict:
         i = 0
         while i < 5:  # support up to 5 different cameras
@@ -220,6 +223,8 @@ class ProcessingEngine:
                 self.num_caps = i
                 break
             i += 1
+
+        self.cap_num_dict = {1: (416,416), 2:(320,320), 3:(208,208), 4:(128, 128), 5:(96,96)}
 
         self.heatmap = Heatmap(self.cap_dict, self.num_caps)
 
@@ -379,13 +384,16 @@ class ProcessingEngine:
         if self.cap_dict[cap_num][3] == 0:
             frame = frame * 0.2
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
-        
+
         net = self.detect_dict[cap_num]  # select the image processor (net)
 
         (H, W) = frame.shape[:2]
 
         # pre-process the image for passing it into the YOLO model
-        blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (128, 128),
+        # blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (128, 128),
+        #                              swapRB=True, crop=False)
+
+        blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
                                      swapRB=True, crop=False)
 
         # run detection on the frame:
@@ -419,5 +427,3 @@ if __name__ == "__main__":
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 engine.heatmap.show_heatmap(cap_num)
                 break
-
-
