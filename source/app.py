@@ -7,21 +7,6 @@ from web_classes import WebApplication
 from cv_classes import ProcessingEngine
 
 
-def feed(engine, cap_num):
-    """
-    Opens a camera reader, gets a processed frame, encodes it to JPEG, and returns it as a
-    snippet of a multipart response body.
-        Author of this function: Elias Gabriel
-    """
-    # In a loop, get the current frame of the camera as a byte sequence and yield it to the calling process.
-    # This lets us send a HTTP response back to the client, but keeps it open to allow for continious
-    # updates. In effect, this streams image data from the server to the client's computer through a
-    # Motion JPEG.
-    # Wrap the encoded frame in a multipart image section, to be inserted into the multipart HTTP response
-    while True:
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(int(cap_num)) + b'\r\n')
-
-
 def record_button_receiver():
     """
     Listens for whether the button to trigger recording the footage on the web app is pressed, and instructs the engine
@@ -33,6 +18,8 @@ def record_button_receiver():
         engine.record = True
     else:
         engine.record = False
+
+    print(record)
 
     # return 'none' and not None because Flask doesn't like it when None is returned.
     return 'none'
@@ -86,20 +73,63 @@ def select_feeds(error=False):
 
 
 def more_info(error=False):
-    return render_template('more_info.html', visibility=("visible" if error else "hidden"))
+    return render_template('more_info.html')
+
+
+def results():
+    return render_template('results.html', NUM_CAPS=engine.num_caps - 1)
 
 
 def eye(CAP_NUM):
     """ Returns a mixed multipart HTTP response containing streamed MJPEG data, pulled from
     the OpenCV image processor. """
-    # if int(time.time()) % 3 == 0:
-    #     engine.refresh()
 
     # Create and return a mutlipart HTTP response, with the separate parts defined by '--frame'
     try:
         return Response(feed(engine, CAP_NUM), mimetype='multipart/x-mixed-replace; boundary=frame')
     except:
         return index(error=True)
+
+
+def feed(engine, cap_num):
+    """
+    Opens a camera reader, gets a processed frame, encodes it to JPEG, and returns it as a
+    snippet of a multipart response body.
+        Author of this function: Elias Gabriel
+    """
+    # In a loop, get the current frame of the camera as a byte sequence and yield it to the calling process.
+    # This lets us send a HTTP response back to the client, but keeps it open to allow for continious
+    # updates. In effect, this streams image data from the server to the client's computer through a
+    # Motion JPEG.
+    # Wrap the encoded frame in a multipart image section, to be inserted into the multipart HTTP response
+    while True:
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(int(cap_num)) + b'\r\n')
+
+
+def heatmap(CAP_NUM):
+    """ Returns a mixed multipart HTTP response containing streamed MJPEG data, pulled from
+    the OpenCV image processor. """
+
+    # Create and return a mutlipart HTTP response, with the separate parts defined by '--frame'
+    try:
+        return Response(individual_heatmap(engine, CAP_NUM), mimetype='multipart/x-mixed-replace; boundary=frame')
+    except:
+        return index(error=True)
+
+
+def individual_heatmap(engine, cap_num):
+    """
+    Opens a camera reader, gets a processed frame, encodes it to JPEG, and returns it as a
+    snippet of a multipart response body.
+        Author of this function: Elias Gabriel
+    """
+    # In a loop, get the current frame of the camera as a byte sequence and yield it to the calling process.
+    # This lets us send a HTTP response back to the client, but keeps it open to allow for continious
+    # updates. In effect, this streams image data from the server to the client's computer through a
+    # Motion JPEG.
+    # Wrap the encoded frame in a multipart image section, to be inserted into the multipart HTTP response
+    while True:
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(int(cap_num)) + b'\r\n')
 
 
 # Create a processing engine. Although it generally isn't good practice to do this in the body of the document, the
@@ -119,7 +149,9 @@ if __name__ == "__main__":
         '/<CAP_NUM>': eye,
         '/record_button_receiver': record_button_receiver,
         '/cap_switch': cap_switch,
-        '/calib_switch': calib_switch})
+        '/calib_switch': calib_switch,
+        '/<CAP_NUM>heatmap': heatmap,
+        '/results': results})
 
     # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)
