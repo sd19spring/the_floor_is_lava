@@ -14,6 +14,12 @@ def record_button_receiver():
     :return: 'none'
     """
     record = request.get_data().decode()
+
+    # if this statement is true, then the heatmaps need to be reset for the next recording
+    if engine.record:
+        engine.heatmap.reset()
+
+    # flip the switch
     if record == 'true':
         engine.record = True
     else:
