@@ -30,7 +30,7 @@ let switchBool = '';
 let calibDict = {};
 let firstTimeFlag = false;  // boolean for whether the record button has been pressed yet
 
-function changeSwitch(url, numCaps) {
+function changeSwitch(url) {
     // Change the switchBool switch from it's previous state
     switchBool = switchBool === 'true' ? 'false' : 'true';
 
