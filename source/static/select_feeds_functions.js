@@ -31,38 +31,40 @@ let calibDict = {};
 let firstTimeFlag = false;  // boolean for whether the record button has been pressed yet
 
 function changeSwitch(url) {
-    // ajax the JSON to the server
-    if (switchBool === 'true') {
-        switchBool = 'false';
-    } else {
-        switchBool = 'true';
-    }
+    // Change the switchBool switch from it's previous state
+    switchBool = switchBool === 'true' ? 'false' : 'true';
+
     if (switchBool === 'false' && firstTimeFlag === true) {
         document.getElementById('result').style.visibility = "visible";
     } else {
         document.getElementById('result').style.visibility = "hidden";
     }
+
     firstTimeFlag = true;
+
+    // ajax the JSON to the server
     $.post(url, switchBool, changeSwitchButton(switchBool));
     // stop link reloading the page
     event.preventDefault();
 }
 
 function muteCam(capNum) {
-    if (muteDict[capNum] === 1) {
-        // turn the camera off
-        $.post("/cap_switch", {capNum: capNum, record: 0}, changeButtonCam(capNum, muteDict[capNum], 'Unmute',
-            'capToggle'));
-        // stop link reloading the page
-        event.preventDefault();
-        muteDict[capNum] = 0;
-    } else {
-        // turn the camera on
-        $.post("/cap_switch", {capNum: capNum, record: 1}, changeButtonCam(capNum, muteDict[capNum], 'Mute',
-            'capToggle'));
-        // stop link reloading the page
-        event.preventDefault();
-        muteDict[capNum] = 1;
+    if (switchBool !== 'true') {  // make the mute button inaccessible when recording
+        if (muteDict[capNum] === 1) {
+            // turn the camera off
+            $.post("/cap_switch", {capNum: capNum, record: 0}, changeButtonCam(capNum, muteDict[capNum], 'Unmute',
+                'capToggle'));
+            // stop link reloading the page
+            event.preventDefault();
+            muteDict[capNum] = 0;
+        } else {
+            // turn the camera on
+            $.post("/cap_switch", {capNum: capNum, record: 1}, changeButtonCam(capNum, muteDict[capNum], 'Mute',
+                'capToggle'));
+            // stop link reloading the page
+            event.preventDefault();
+            muteDict[capNum] = 1;
+        }
     }
 }
 
@@ -83,7 +85,6 @@ function calibCam(capNum) {
         calibDict[capNum] = 1;
     }
 }
-
 
 function changeSwitchButton(switchBool) {
     // Used to change the appearance and properties of the button used to toggle the recording of the heatmap.
