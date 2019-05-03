@@ -14,8 +14,5 @@ function createDivs(numCaps) {
         var parentDiv = sp2.parentNode;
         // Insert the new element into the DOM before sp2
         parentDiv.insertBefore(frame, sp2.nextSibling);
-
-        muteDict[i] = 1;  // 1 indicates that the camera should be turned on; 0 indicates that it shouldn't
-        calibDict[i] = 1;  // 1 indicates that the camera is not using calibration; 0 indicates that it is
     }
 }
