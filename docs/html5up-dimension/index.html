@@ -6,6 +6,7 @@
 -->
 <html>
 	<head>
+		<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=ruby&amp;skin=desert"></script>
 		<title>Dimension by HTML5 UP</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
@@ -80,7 +81,7 @@
 						<!-- Work -->
 							<article id="work">
 								<h2 class="major">How To Run</h2>
-								<span class="image main"><img src="images/pic02.jpg" alt="" /></span>
+								<span class="image main"><img src="images/lava.gif" height="200" width="50" alt="" /></span>
 								<p>First you will need to clone the repo, The Floor is Lava, to your computer. Make sure you have the correct modules downloaded as specified in the README files. When launching this script, there are several steps that need to be taken.
 It begins with the following..
 								<ol>
@@ -104,11 +105,124 @@ Super helpful for debugging.</li>
 								<h2 class="major">About</h2>
 								<p>So, you may be wondering, how does the code work? Let's begin with <b>app.py</b> script below that runs the Web App.
 									These snipets display the packages being implemented and some of the function created to make this work.</p>
-								<img src="images/Snipet1.png" alt="" height="400" width="500" ></img>
-								<img src="images/Snipet2.png" alt="" height="400" width="500" ></img>
-								<p> There are important classes that were integrated including a Heatmap, Stopwatch, ProcessingEngine that were created in order to frame it all together. See below.</p>
-								<img src="images/Snipet3.png" alt="" height="400" width="500" ></img>
-								<img src="images/Snipet4.png" alt="" height="400" width="500" ></img>
+									<img src="images/Snipet1.png" alt="" height="400" width="500" ></img>
+									<img src="images/Snipet2.png" alt="" height="400" width="500" ></img>
+									<p> There are important classes that were integrated including a Heatmap, Stopwatch, ProcessingEngine that were created in order to frame it all together. See below.</p>
+									<pre class="prettyprint">
+"""
+Contains all the classes used for computer vision and backend
+processing.
+@author: Duncan Mazza
+@revision: v1.3
+"""
+
+import cv2
+import cv2.aruco as aruco
+from math import acos, cos, sin
+import numpy as np
+import time
+import os
+
+execution_path = os.getcwd()
+
+DETECTION_THRESHOLD = 0.6
+# minimum confidence level for person to be recognized
+
+
+class Stopwatch:
+"""
+A utility for the calibrate() method of the ProcessingEngine
+class; acts as a stopwatch.
+"""
+
+  def __init__(self):
+      self.logged_time = time.time()
+      self.time_since_last_check = 0
+
+  def log_time(self):
+  """
+  Record the current time
+  """
+      self.logged_time = time.time()
+
+  def check_stopwatch(self):
+  """
+  Check the elapsed time between when this method is called and
+	when the stopwatch time was last logged.
+  :return: self.time_since_last_check
+  """
+      self.time_since_last_check = time.time() - self.logged_time
+      return self.time_since_last_check
+
+
+class Heatmap:
+"""
+This class stores and renders the heatmaps generated
+from the object detection in ProcessingEngine
+"""
+
+  def __init__(self):
+      self.num_caps = 0  # number of captures (same as ProcessingEngine)
+      self.heatmap_dict = {}  # dictionary to store the heatmaps
+      self.cap_size_dict = {}  # dictionary to store the
+			 resolution of the camera frames
+
+  def add_heatmaps(self, cap_dict, num_caps):
+  """
+  Initializes empty heatmaps for each of the connected cameras
+  :param cap_dict: dictionary of OpenCV captures
+  :param num_caps:  number of captures in the dictionary
+  :return: void
+  """
+      self.num_caps = num_caps
+      for i in range(num_caps):
+          cap = cap_dict[i][0]
+          width = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+          height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+          print(width, height)
+          self.heatmap_dict[i] = np.zeros((width, height))
+          self.cap_size_dict[i] = (width, height)
+
+  def add_to_heatmap(self, cap_num, box_points):
+  """
+  Add the points enclosed by a bounding box to the heatmap
+  :param cap_num: index of the camera
+  :param box_points: bounding box poitns (top left x, top left y,
+	bottom right x, bottom right y)
+  :return:
+  """
+      self.heatmap_dict[cap_num][box_points[1]:box_points[3],
+			box_points[0]:box_points[2]] += 1
+
+  def return_heatmap(self, cap_num):
+  """
+  Returns a matrix that will be interpreted by OpenCV and
+	therefore the user as a heatmap
+  :param cap_num:  index of the camera
+  :return heatmap_img: a numpy.ndarray that is an
+	image representing the heatmap
+  """
+      h = self.heatmap_dict[cap_num]  # retrieve the raw heatmap values
+      h = np.interp(h, (0, h.max()), (0, 255))
+			# rescale the heatmap to 0:255 values
+      h = h.astype(np.uint8)  # convert data type for applyColorMap
+      heatmap_img = cv2.applyColorMap(h, cv2.COLORMAP_HOT)
+		  # turn matrix into a heatmap
+      return heatmap_img
+
+  def reset(self):
+  """
+  Resets the heatmaps using previously stored information about
+	the camera's width and height
+  :return: void
+  """
+      self.heatmap_dict = {}
+      for i in range(self.num_caps):
+          shape = self.cap_size_dict[i]
+          self.heatmap_dict[i] = np.zeros(shape)
+
+									</pre>
+
 							</article>
 
 						<!-- Contact -->
