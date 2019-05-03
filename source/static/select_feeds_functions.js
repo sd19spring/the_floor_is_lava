@@ -9,7 +9,7 @@ function createDivs(numCaps) {
         var frame = document.createElement("div");
         var eye_str = '/' + i;
         frame.setAttribute('class', 'capture_div');
-        frame.innerHTML = "<img alt='Camera frame' src=" + eye_str + " class='capture'/>" +
+        frame.innerHTML = "<img alt='[loading camera...]' src=" + eye_str + " class='capture'/>" +
             "<div class='row'><div onclick='muteCam(" + i + ")' id='capToggle" + i + "' " +
             "class='cover button_small forty' " + ">Mute</div>" + "<div class='cover button_small forty' " +
             "id='calibrateToggle" + i + "' onclick='calibCam(" + i + ")'>Calibrate</div></div>";
@@ -28,26 +28,23 @@ function createDivs(numCaps) {
 // these need to be globally accessible
 let switchBool = '';
 let calibDict = {};
-let firstTimeFlag = false;  // boolean for whether the record button has been pressed yet
 
 function changeSwitch(url) {
+    // Change the switchBool switch from it's previous state
+    switchBool = switchBool === 'true' ? 'false' : 'true';
+
+    // If not in recording mode, make the 'see results' button visible
+    document.getElementById('result').style.visibility = switchBool === 'false' ? "visible" : "hidden";
+
     // ajax the JSON to the server
-    if (switchBool === 'true') {
-        switchBool = 'false';
-    } else {
-        switchBool = 'true';
-    }
-    if (switchBool === true && firstTimeFlag === true) {
-        document.getElementById('result').style.visibility = "visible";
-    }
-    firstTimeFlag = true;
     $.post(url, switchBool, changeSwitchButton(switchBool));
     // stop link reloading the page
     event.preventDefault();
 }
 
 function muteCam(capNum) {
-    if (muteDict[capNum] === 1) {
+    // the first condition makes the mute button inaccessible when recording
+    if (switchBool !== 'true') if (muteDict[capNum] === 1) {
         // turn the camera off
         $.post("/cap_switch", {capNum: capNum, record: 0}, changeButtonCam(capNum, muteDict[capNum], 'Unmute',
             'capToggle'));
@@ -82,7 +79,6 @@ function calibCam(capNum) {
     }
 }
 
-
 function changeSwitchButton(switchBool) {
     // Used to change the appearance and properties of the button used to toggle the recording of the heatmap.
     // switchBool is a global integer boolean that keeps track of the current state of the button.
@@ -90,7 +86,7 @@ function changeSwitchButton(switchBool) {
         document.getElementById("switch").innerHTML = "<a>Stop Recording</a>";
         document.getElementById("switch").className = "cover button_red";
     } else {
-        document.getElementById("switch").innerHTML = "<a>Create Heatmap ➡️</a>";
+        document.getElementById("switch").innerHTML = "<a>Create Heatmap 🔨️</a>";
         document.getElementById("switch").className = "cover button";
     }
 }

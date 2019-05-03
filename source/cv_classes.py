@@ -7,21 +7,14 @@ Contains all the classes used for computer vision and backend processing.
 
 import cv2
 import cv2.aruco as aruco
-
 from math import acos, cos, sin
-import time
 import numpy as np
 import time
 import os
-from matplotlib import pyplot as plt
-import threading
-
-import os
-from matplotlib import pyplot as plt
 
 execution_path = os.getcwd()
 
-DETECTION_THRESHOLD = 0.6
+DETECTION_THRESHOLD = 0.6  # minimum confidence level for person to be recognized
 
 
 def find_square_dest(square):
@@ -70,41 +63,49 @@ class Stopwatch:
         return self.time_since_last_check
 
 
-class ByteCapture:
-    """
-    Serves as a wrapper for a given byte sequence. This class forms a bridge between raw data and
-    an abstracted processing engine. Currently it is not used - exists for future capabilities.
-    """
-
-    def write(self, byte_seq):
-        """ Stores the given byte sequence within an instance attribute. """
-        self.bytes = byte_seq
-
-    def read(self):
-        """ Returns the stored byte sequence. """
-        return None, self.bytes
-
-
 class Heatmap:
     def __init__(self, cap_dict, num_caps):
+        self.num_caps = num_caps
         self.heatmap_dict = {}
+        self.cap_size_dict = {}
         for i in range(num_caps):
             cap = cap_dict[i][0]
             _, frame = cap.read()
             camera_shape = frame.shape
-            self.heatmap_dict[i] = np.zeros((camera_shape[1], camera_shape[0]))
+            self.heatmap_dict[i] = np.zeros((camera_shape[0], camera_shape[1]))
+            self.cap_size_dict[i] = (camera_shape[0], camera_shape[1])
+            print((camera_shape[0], camera_shape[1]))
+
 
     def add_heatmap(self, cap_num, box_points):
-        self.heatmap_dict[cap_num][box_points[1]:box_points[2], box_points[0]:box_points[3]] += 1
+        print('Adding box for:', cap_num)
+        self.heatmap_dict[cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
 
-    def show_heatmap(self, cap_num):
-        # draw map
-        plt.imshow(self.heatmap_dict[cap_num], cmap='hot', interpolation='nearest')
-        plt.show()
-        plt.savefig('matrix.jpg')
+    def return_heatmap(self, cap_num):
+        h = self.heatmap_dict[cap_num]  # retrieve the heatmap
+        h = np.interp(h, (0, h.max()), (0, 255))  # rescale the heatmap to 0:255
+        h = h.astype(np.uint8)  # convert data type for applyColorMap
+        heatmap_img = cv2.applyColorMap(h, cv2.COLORMAP_HOT)  # turn matrix into a heatmap
+        return heatmap_img
+
+    def reset(self):
+        self.heatmap_dict = {}
+        for i in range(self.num_caps):
+            shape = self.cap_size_dict[i]
+            self.heatmap_dict[i] = np.zeros(shape)
+
 
 
 def parse_detected(frame, W, H, layerOutputs, LABELS):
+    """
+    TODO: credit source for this code
+    :param frame: input frame to the object detection
+    :param w: width of the frame
+    :param h: height of the frame
+    :param layerOutputs: output from the object detection
+    :param LABELS: labels for the YOLO model
+    :return: boxes, frame_copy: bounding boxes for the detected people, a copy of the frame with bounding boxes drawn
+    """
     boxes = []
     confidences = []
     classIDs = []
@@ -117,10 +118,6 @@ def parse_detected(frame, W, H, layerOutputs, LABELS):
             # the current object detection
             scores = detection[5:]
             classID = np.argmax(scores)
-
-            # TODO: Fix pls
-            # if classID != 'person':
-            #     continue
 
             confidence = scores[classID]
 
@@ -153,16 +150,23 @@ def parse_detected(frame, W, H, layerOutputs, LABELS):
     if len(idxs) > 0:
         # loop over the indexes we are keeping
         for i in idxs.flatten():
-            # extract the bounding box coordinates
-            (x, y) = (boxes[i][0], boxes[i][1])
-            (w, h) = (boxes[i][2], boxes[i][3])
+            if LABELS[classIDs[i]] != 'person':
+                frame_copy = frame
+                return [], frame_copy
+            else:
+                # extract the bounding box coordinates
+                (x, y) = (boxes[i][0], boxes[i][1])
+                (w, h) = (boxes[i][2], boxes[i][3])
 
-            # draw a bounding box rectangle and label on the image
-            color = (157, 161, 100)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-            text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
-            cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5, color, 2)
+                boxes[i][2] = x + w
+                boxes[i][3] = y + h
+
+                # draw a bounding box rectangle and label on the image
+                color = (157, 161, 100)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+                text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
+                cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5, color, 2)
     frame_copy = frame
     return boxes, frame_copy
 
@@ -198,6 +202,9 @@ class ProcessingEngine:
         self.detect_dict = {}  # store detected outputs in a dictionary
         self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
 
+        self.cap_num_dict= {}
+
+
         # add all of the OpenCV captures to self.cap_dict:
         i = 0
         while i < 5:  # support up to 5 different cameras
@@ -220,6 +227,8 @@ class ProcessingEngine:
                 self.num_caps = i
                 break
             i += 1
+
+        self.cap_num_dict = {1: (416,416), 2:(320,320), 3:(208,208), 4:(128, 128), 5:(96,96)}
 
         self.heatmap = Heatmap(self.cap_dict, self.num_caps)
 
@@ -376,36 +385,43 @@ class ProcessingEngine:
         cap = self.cap_dict.get(cap_num)[0]  # select the camera
         _, frame = cap.read()
 
-        if self.cap_dict[cap_num][3] == 0:
+        if self.cap_dict[cap_num][3] == 0:  # if the camera is muted
             frame = frame * 0.2
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
-        
-        net = self.detect_dict[cap_num]  # select the image processor (net)
 
-        (H, W) = frame.shape[:2]
+        else:
+            net = self.detect_dict[cap_num]  # select the image processor (net)
 
-        # pre-process the image for passing it into the YOLO model
-        blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (128, 128),
-                                     swapRB=True, crop=False)
+            (H, W) = frame.shape[:2]
 
-        # run detection on the frame:
-        net.setInput(blob)
-        layerOutputs = net.forward(self.ln)
-        boxes, frame = parse_detected(frame, W, H, layerOutputs, self.LABELS)
+            blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
+                                         swapRB=True, crop=False)
 
-        for i in range(len(boxes)):
-            self.heatmap.add_heatmap(cap_num, boxes[i])
+            # run detection on the frame:
+            net.setInput(blob)
+            layerOutputs = net.forward(self.ln)
+            boxes, frame = parse_detected(frame, W, H, layerOutputs, self.LABELS)
 
-        if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
-            if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
-                # becomes the calibration matrix, the truth value of a multi-element array is ambiguous
-                frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (frame.shape[1], frame.shape[0]))
-            else:  # perform calibration
-                while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
-                    frame = self.calibrate(cap_num)
-                    return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+            # add bounding boxes to the heatmap
+            if self.record:
+                for i in range(len(boxes)):
+                    print('cv_classes: ', cap_num)
+                    self.heatmap.add_heatmap(cap_num, boxes[i])
 
-        return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+            if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
+                if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
+                    # becomes the calibration matrix, the truth value of a multi-element array is ambiguous
+                    frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (frame.shape[1], frame.shape[0]))
+                else:  # perform calibration
+                    while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
+                        frame = self.calibrate(cap_num)
+                        return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
+            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
+    def show_heatmap(self, cap_num):
+        heat_img = self.heatmap.return_heatmap(cap_num)
+        return heat_img if self.debug else cv2.imencode('.jpg', heat_img)[1].tobytes()
 
 
 if __name__ == "__main__":
@@ -419,5 +435,3 @@ if __name__ == "__main__":
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 engine.heatmap.show_heatmap(cap_num)
                 break
-
-
