@@ -28,19 +28,13 @@ function createDivs(numCaps) {
 // these need to be globally accessible
 let switchBool = '';
 let calibDict = {};
-let firstTimeFlag = false;  // boolean for whether the record button has been pressed yet
 
 function changeSwitch(url) {
     // Change the switchBool switch from it's previous state
     switchBool = switchBool === 'true' ? 'false' : 'true';
 
-    if (switchBool === 'false' && firstTimeFlag === true) {
-        document.getElementById('result').style.visibility = "visible";
-    } else {
-        document.getElementById('result').style.visibility = "hidden";
-    }
-
-    firstTimeFlag = true;
+    // If not in recording mode, make the 'see results' button visible
+    document.getElementById('result').style.visibility = switchBool === 'false' ? "visible" : "hidden";
 
     // ajax the JSON to the server
     $.post(url, switchBool, changeSwitchButton(switchBool));
@@ -49,22 +43,21 @@ function changeSwitch(url) {
 }
 
 function muteCam(capNum) {
-    if (switchBool !== 'true') {  // make the mute button inaccessible when recording
-        if (muteDict[capNum] === 1) {
-            // turn the camera off
-            $.post("/cap_switch", {capNum: capNum, record: 0}, changeButtonCam(capNum, muteDict[capNum], 'Unmute',
-                'capToggle'));
-            // stop link reloading the page
-            event.preventDefault();
-            muteDict[capNum] = 0;
-        } else {
-            // turn the camera on
-            $.post("/cap_switch", {capNum: capNum, record: 1}, changeButtonCam(capNum, muteDict[capNum], 'Mute',
-                'capToggle'));
-            // stop link reloading the page
-            event.preventDefault();
-            muteDict[capNum] = 1;
-        }
+    // the first condition makes the mute button inaccessible when recording
+    if (switchBool !== 'true') if (muteDict[capNum] === 1) {
+        // turn the camera off
+        $.post("/cap_switch", {capNum: capNum, record: 0}, changeButtonCam(capNum, muteDict[capNum], 'Unmute',
+            'capToggle'));
+        // stop link reloading the page
+        event.preventDefault();
+        muteDict[capNum] = 0;
+    } else {
+        // turn the camera on
+        $.post("/cap_switch", {capNum: capNum, record: 1}, changeButtonCam(capNum, muteDict[capNum], 'Mute',
+            'capToggle'));
+        // stop link reloading the page
+        event.preventDefault();
+        muteDict[capNum] = 1;
     }
 }
 

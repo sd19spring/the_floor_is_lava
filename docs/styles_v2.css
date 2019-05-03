@@ -17,9 +17,11 @@ main{
 }
 h1 {
   font: bold italic 35pt tahoma;
+  text-decoration: underline;
+  text-align: center;
 }
 p {
-  font: 30pt tahoma;
+  font: 20pt tahoma;
   text-indent: 2em;
   padding-bottom:1em;
   margin:auto;

@@ -15,8 +15,8 @@ def record_button_receiver():
     """
     record = request.get_data().decode()
 
-    # if this statement is true, then the heatmaps need to be reset for the next recording
-    if engine.record:
+    # reset the heatmap for the next recording
+    if not engine.record:
         engine.heatmap.reset()
 
     # flip the switch
@@ -24,8 +24,6 @@ def record_button_receiver():
         engine.record = True
     else:
         engine.record = False
-
-    print(record)
 
     # return 'none' and not None because Flask doesn't like it when None is returned.
     return 'none'
@@ -75,6 +73,8 @@ def index(error=False):
 
 
 def select_feeds(error=False):
+    if len(engine.cap_dict) == 0:
+        engine.add_cameras()
     return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
 
 
@@ -118,12 +118,12 @@ def heatmap(CAP_NUM):
 
     # Create and return a mutlipart HTTP response, with the separate parts defined by '--frame'
     try:
-        return Response(individual_heatmap(engine, CAP_NUM), mimetype='multipart/x-mixed-replace; boundary=frame')
+        return Response(heatmap_feed(engine, CAP_NUM), mimetype='multipart/x-mixed-replace; boundary=frame')
     except:
         return index(error=True)
 
 
-def individual_heatmap(engine, cap_num):
+def heatmap_feed(engine, cap_num):
     """
     Opens a camera reader, gets a processed frame, encodes it to JPEG, and returns it as a
     snippet of a multipart response body.
@@ -134,8 +134,9 @@ def individual_heatmap(engine, cap_num):
     # updates. In effect, this streams image data from the server to the client's computer through a
     # Motion JPEG.
     # Wrap the encoded frame in a multipart image section, to be inserted into the multipart HTTP response
+    print(cap_num)
     while True:
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(int(cap_num)) + b'\r\n')
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.show_heatmap(int(cap_num)) + b'\r\n')
 
 
 # Create a processing engine. Although it generally isn't good practice to do this in the body of the document, the
@@ -152,10 +153,10 @@ if __name__ == "__main__":
         '/': index,
         '/select_feeds': select_feeds,
         '/more_info': more_info,
-        '/<CAP_NUM>': eye,
         '/record_button_receiver': record_button_receiver,
         '/cap_switch': cap_switch,
         '/calib_switch': calib_switch,
+        '/<CAP_NUM>': eye,
         '/<CAP_NUM>heatmap': heatmap,
         '/results': results})
 
