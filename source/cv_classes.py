@@ -301,7 +301,7 @@ class ProcessingEngine:
             self.cap_dict[capNum][2] = 0
         return None
 
-    def calibrate(self, cap_num):
+    def calibrate(self, cap_num, frame):
         """
         Calibrates the camera so that the perspective of the camera will always be orthogonal to the floor or whatever
         surface it is calibrated with. To do this, it looks for the marker calibration sheet. When it finds the markers,
@@ -313,15 +313,8 @@ class ProcessingEngine:
 
         :return: frame or frame converted to bytes, depending on use case
         """
-        if self.debug:
-            # for visualizing the corners of the markers in debug mode
-            colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
-
-        cap = self.cap_dict[cap_num][0]  # select the camera to be calibrated
-        _, frame = cap.read()
-
-        frame_x = frame.shape[1]  # number of pixels wide the camera frame is
-        frame_y = frame.shape[0]  # number of pixels tall the camera frame is
+        frame_x = self.cap_dict[cap_num][4][1]  # number of pixels wide the camera frame is
+        frame_y = self.cap_dict[cap_num][4][0]  # number of pixels tall the camera frame is
         frame_x_c = int(frame_x / 2)  # center of the camera frame in the x direction
 
         # detect the ARUCO markers
@@ -446,7 +439,7 @@ class ProcessingEngine:
                     frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (height, width))
                 else:  # perform calibration
                     while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
-                        frame = self.calibrate(cap_num)
+                        frame = self.calibrate(cap_num, frame)
                         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
             net = self.detect_dict[cap_num]  # select the image processor (net)
@@ -472,6 +465,7 @@ class ProcessingEngine:
 if __name__ == "__main__":
     engine = ProcessingEngine(debug=True)
     engine.turn_on()
+    engine.record = True
     # display each camera connected to the computer with a corrected perspective
     while True:
         for cap_num in range(engine.num_caps):
@@ -481,3 +475,13 @@ if __name__ == "__main__":
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 engine.heatmap.show_heatmap(cap_num)
                 break
+
+    while True:
+        for cap_num in range(engine.num_caps):
+            print ('here')
+            frame = engine.get_frame(cap_num, calibrate=False)
+            cv2.imshow("frame {}".format(cap_num), frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                engine.heatmap.show_heatmap(cap_num)
+                break
+
