@@ -17,28 +17,6 @@ execution_path = os.getcwd()
 DETECTION_THRESHOLD = 0.6  # minimum confidence level for person to be recognized
 
 
-def find_square_dest(square):
-    """
-    Infers what the calibration square would look like if it was orthogonal to the camera. This is set later as the
-    destination square: square_dest. The destination square is used for warping the camera perspective to a desireable
-    one.
-
-    :param square: list of 4 tuples (coordinates)
-    :return: np.float32 list of 4 tuples (coordinates)
-    """
-    # vector of bottom edge of the calibration square, placed at the origin
-    bottom_edge_orig = np.float32([square[2][0] - square[3][0], square[2][1] - square[3][1]])
-    mbe = np.linalg.norm(bottom_edge_orig)  # length (magnitude) of the bottom edge (mbe)
-    unit_bottom_edge = bottom_edge_orig / mbe  # bottom edge vector changed to length of 1
-    theta = abs(acos(unit_bottom_edge.dot(np.float32([1, 0]))))  # absolute angle between horizontal and bottom edge
-    # set up the rotation matrix:
-    rotation_matrix = np.float32([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
-    # template for the destination square (to be modified by rotation matrix)
-    orig_square_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
-    # apply the rotation matrix to the original square, translated to match the position of observed calibration square
-    return orig_square_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
-
-
 class Stopwatch:
     """
     A utility for the calibrate() method of the ProcessingEngine class; acts as a stopwatch.
@@ -64,36 +42,61 @@ class Stopwatch:
 
 
 class Heatmap:
-    def __init__(self, cap_dict, num_caps):
+    """
+    This class stores and renders the heatmaps generated from the object detection in ProcessingEngine
+    """
+
+    def __init__(self):
+        self.num_caps = 0  # number of captures (same as ProcessingEngine)
+        self.heatmap_dict = {}  # dictionary to store the heatmaps
+        self.cap_size_dict = {}  # dictionary to store the resolution of the camera frames
+
+    def add_heatmaps(self, cap_dict, num_caps):
+        """
+        Initializes empty heatmaps for each of the connected cameras
+        :param cap_dict: dictionary of OpenCV captures
+        :param num_caps:  number of captures in the dictionary
+        :return: void
+        """
         self.num_caps = num_caps
-        self.heatmap_dict = {}
-        self.cap_size_dict = {}
         for i in range(num_caps):
             cap = cap_dict[i][0]
-            _, frame = cap.read()
-            camera_shape = frame.shape
-            self.heatmap_dict[i] = np.zeros((camera_shape[0], camera_shape[1]))
-            self.cap_size_dict[i] = (camera_shape[0], camera_shape[1])
-            print((camera_shape[0], camera_shape[1]))
+            width = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            print(width, height)
+            self.heatmap_dict[i] = np.zeros((width, height))
+            self.cap_size_dict[i] = (width, height)
 
-
-    def add_heatmap(self, cap_num, box_points):
-        print('Adding box for:', cap_num)
+    def add_to_heatmap(self, cap_num, box_points):
+        """
+        Add the points enclosed by a bounding box to the heatmap
+        :param cap_num: index of the camera
+        :param box_points: bounding box poitns (top left x, top left y, bottom right x, bottom right y)
+        :return:
+        """
         self.heatmap_dict[cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
 
     def return_heatmap(self, cap_num):
-        h = self.heatmap_dict[cap_num]  # retrieve the heatmap
-        h = np.interp(h, (0, h.max()), (0, 255))  # rescale the heatmap to 0:255
+        """
+        Returns a matrix that will be interpreted by OpenCV and therefore the user as a heatmap
+        :param cap_num:  index of the camera
+        :return heatmap_img: a numpy.ndarray that is an image representing the heatmap
+        """
+        h = self.heatmap_dict[cap_num]  # retrieve the raw heatmap values
+        h = np.interp(h, (0, h.max()), (0, 255))  # rescale the heatmap to 0:255 values
         h = h.astype(np.uint8)  # convert data type for applyColorMap
         heatmap_img = cv2.applyColorMap(h, cv2.COLORMAP_HOT)  # turn matrix into a heatmap
         return heatmap_img
 
     def reset(self):
+        """
+        Resets the heatmaps using previously stored information about the camera's width and height
+        :return: void
+        """
         self.heatmap_dict = {}
         for i in range(self.num_caps):
             shape = self.cap_size_dict[i]
             self.heatmap_dict[i] = np.zeros(shape)
-
 
 
 def parse_detected(frame, W, H, layerOutputs, LABELS):
@@ -171,6 +174,28 @@ def parse_detected(frame, W, H, layerOutputs, LABELS):
     return boxes, frame_copy
 
 
+def find_square_dest(square):
+    """
+    Infers what the calibration square would look like if it was orthogonal to the camera. This is set later as the
+    destination square: square_dest. The destination square is used for warping the camera perspective to a desireable
+    one.
+
+    :param square: list of 4 tuples (coordinates)
+    :return: np.float32 list of 4 tuples (coordinates)
+    """
+    # vector of bottom edge of the calibration square, placed at the origin
+    bottom_edge_orig = np.float32([square[2][0] - square[3][0], square[2][1] - square[3][1]])
+    mbe = np.linalg.norm(bottom_edge_orig)  # length (magnitude) of the bottom edge (mbe)
+    unit_bottom_edge = bottom_edge_orig / mbe  # bottom edge vector changed to length of 1
+    theta = abs(acos(unit_bottom_edge.dot(np.float32([1, 0]))))  # absolute angle between horizontal and bottom edge
+    # set up the rotation matrix:
+    rotation_matrix = np.float32([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
+    # template for the destination square (to be modified by rotation matrix)
+    orig_square_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
+    # apply the rotation matrix to the original square, translated to match the position of observed calibration square
+    return orig_square_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
+
+
 class ProcessingEngine:
     """
     The backend class for image per-processing.
@@ -182,8 +207,9 @@ class ProcessingEngine:
         self.LABELS = open(labelsPath).read().strip().split("\n")
 
         # derive the paths to the YOLO weights and model configuration
-        weightsPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.weights"])
-        configPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.cfg"])
+        self.weightsPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.weights"])
+        self.configPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.cfg"])
+        self.ln = 0
 
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
@@ -202,9 +228,13 @@ class ProcessingEngine:
         self.detect_dict = {}  # store detected outputs in a dictionary
         self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
 
-        self.cap_num_dict= {}
+        self.cap_num_dict = {}
 
+        self.cap_num_dict = {1: (416, 416), 2: (320, 320), 3: (208, 208), 4: (128, 128), 5: (96, 96)}
 
+        self.heatmap = Heatmap()
+
+    def add_cameras(self, update_heatmaps=True):
         # add all of the OpenCV captures to self.cap_dict:
         i = 0
         while i < 5:  # support up to 5 different cameras
@@ -214,7 +244,8 @@ class ProcessingEngine:
                 # for the calibration matrix, and boolean for whether the camera is to be used]
                 self.cap_dict[i] = [cap, 0, 0, 1]
                 print("[INFO] loading YOLO from disk for camera {}...".format(i))
-                self.detect_dict[i] = cv2.dnn.readNetFromDarknet(configPath, weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
+                self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,
+                                                                 self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
                 print("[INFO] finished loading YOLO for camera {}...".format(i))
                 if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
                     #  the at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
@@ -228,9 +259,31 @@ class ProcessingEngine:
                 break
             i += 1
 
-        self.cap_num_dict = {1: (416,416), 2:(320,320), 3:(208,208), 4:(128, 128), 5:(96,96)}
+        # update the heatmaps
+        if update_heatmaps:
+            self.heatmap.add_heatmaps(self.cap_dict, self.num_caps)
 
-        self.heatmap = Heatmap(self.cap_dict, self.num_caps)
+    def turn_off(self, update_heatmaps=True, reset_detection=True):
+        """
+        Releases all of the OpenCV captures and sets the
+        :param update_heatmaps: a boolean for whether the heatmaps should also be reset
+        :return: void
+        """
+
+        # TODO: currently not used...
+        for i in range(self.num_caps):
+            cap = self.cap_dict[i]
+            cap.release()
+
+        self.cap_dict = {}
+        self.num_caps = 0
+
+        if update_heatmaps:
+            self.heatmap.reset()
+
+        if reset_detection:
+            self.detect_dict = 0
+            self.ln = 0
 
     def cap_toggle(self, capNum, toggle):
         """
@@ -406,7 +459,7 @@ class ProcessingEngine:
             if self.record:
                 for i in range(len(boxes)):
                     print('cv_classes: ', cap_num)
-                    self.heatmap.add_heatmap(cap_num, boxes[i])
+                    self.heatmap.add_to_heatmap(cap_num, boxes[i])
 
             if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
                 if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
