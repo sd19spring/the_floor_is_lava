@@ -14,7 +14,7 @@ def record_button_receiver():
     :return: 'none'
     """
     record = request.get_data().decode()
-    
+
     # reset the heatmap for the next recording
     if not engine.record:
         engine.heatmap.reset()
@@ -73,6 +73,8 @@ def index(error=False):
 
 
 def select_feeds(error=False):
+    if len(engine.cap_dict) == 0:
+        engine.add_cameras()
     return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
 
 
@@ -106,7 +108,6 @@ def feed(engine, cap_num):
     # updates. In effect, this streams image data from the server to the client's computer through a
     # Motion JPEG.
     # Wrap the encoded frame in a multipart image section, to be inserted into the multipart HTTP response
-    print(cap_num)
     while True:
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(int(cap_num)) + b'\r\n')
 
