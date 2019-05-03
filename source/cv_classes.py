@@ -72,26 +72,33 @@ class Heatmap:
             cap = cap_dict[i][0]
             _, frame = cap.read()
             camera_shape = frame.shape
-            self.heatmap_dict[i] = np.zeros((camera_shape[1], camera_shape[0]))
-            self.cap_size_dict[i] = (camera_shape[1], camera_shape[0])
+            self.heatmap_dict[i] = np.zeros((camera_shape[0], camera_shape[1]))
+            self.cap_size_dict[i] = (camera_shape[0], camera_shape[1])
+            print((camera_shape[0], camera_shape[1]))
+
 
     def add_heatmap(self, cap_num, box_points):
-        self.heatmap_dict[cap_num][box_points[1]:box_points[2], box_points[0]:box_points[3]] += 1
+        print('Adding box for:', cap_num)
+        self.heatmap_dict[cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
 
     def return_heatmap(self, cap_num):
-        return cv2.applyColorMap(self.heatmap_dict[cap_num], cv2.COLORMAP_HOT)  # turn matrix into a heatmap
+        h = self.heatmap_dict[cap_num]  # retrieve the heatmap
+        h = np.interp(h, (0, h.max()), (0, 255))  # rescale the heatmap to 0:255
+        h = h.astype(np.uint8)  # convert data type for applyColorMap
+        heatmap_img = cv2.applyColorMap(h, cv2.COLORMAP_HOT)  # turn matrix into a heatmap
+        return heatmap_img
 
     def reset(self):
         self.heatmap_dict = {}
         for i in range(self.num_caps):
             shape = self.cap_size_dict[i]
-            self.heatmap_dict[i] = np.zeros((shape[1], shape[0]))
+            self.heatmap_dict[i] = np.zeros(shape)
 
 
 
-def parse_detected(frame, w, h, layerOutputs, LABELS):
+def parse_detected(frame, W, H, layerOutputs, LABELS):
     """
-
+    TODO: credit source for this code
     :param frame: input frame to the object detection
     :param w: width of the frame
     :param h: height of the frame
@@ -112,10 +119,6 @@ def parse_detected(frame, w, h, layerOutputs, LABELS):
             scores = detection[5:]
             classID = np.argmax(scores)
 
-            # TODO: Fix pls
-            # if classID != 'person':
-            #     continue
-
             confidence = scores[classID]
 
             # filter out weak predictions by ensuring the detected
@@ -125,7 +128,7 @@ def parse_detected(frame, w, h, layerOutputs, LABELS):
                 # size of the image, keeping in mind that YOLO actually
                 # returns the center (x, y)-coordinates of the bounding
                 # box followed by the boxes' width and height
-                box = detection[0:4] * np.array([w, h, w, h])
+                box = detection[0:4] * np.array([W, H, W, H])
                 (centerX, centerY, width, height) = box.astype("int")
 
                 # use the center (x, y)-coordinates to derive the top and
@@ -154,6 +157,9 @@ def parse_detected(frame, w, h, layerOutputs, LABELS):
                 # extract the bounding box coordinates
                 (x, y) = (boxes[i][0], boxes[i][1])
                 (w, h) = (boxes[i][2], boxes[i][3])
+
+                boxes[i][2] = x + w
+                boxes[i][3] = y + h
 
                 # draw a bounding box rectangle and label on the image
                 color = (157, 161, 100)
@@ -396,8 +402,10 @@ class ProcessingEngine:
             layerOutputs = net.forward(self.ln)
             boxes, frame = parse_detected(frame, W, H, layerOutputs, self.LABELS)
 
+            # add bounding boxes to the heatmap
             if self.record:
                 for i in range(len(boxes)):
+                    print('cv_classes: ', cap_num)
                     self.heatmap.add_heatmap(cap_num, boxes[i])
 
             if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
@@ -414,9 +422,6 @@ class ProcessingEngine:
     def show_heatmap(self, cap_num):
         heat_img = self.heatmap.return_heatmap(cap_num)
         return heat_img if self.debug else cv2.imencode('.jpg', heat_img)[1].tobytes()
-
-
-
 
 
 if __name__ == "__main__":
