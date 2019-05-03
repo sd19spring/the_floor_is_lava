@@ -60,18 +60,14 @@ class Heatmap:
         """
         self.num_caps = num_caps
         for i in range(num_caps):
-            cap = cap_dict[i][0]
-            width = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            print(width, height)
-            self.heatmap_dict[i] = np.zeros((width, height))
-            self.cap_size_dict[i] = (width, height)
+            self.heatmap_dict[i] = np.zeros((cap_dict[i][4][0], cap_dict[i][4][1]))
+            self.cap_size_dict[i] = (cap_dict[i][4][0], cap_dict[i][4][1])
 
     def add_to_heatmap(self, cap_num, box_points):
         """
         Add the points enclosed by a bounding box to the heatmap
         :param cap_num: index of the camera
-        :param box_points: bounding box poitns (top left x, top left y, bottom right x, bottom right y)
+        :param box_points: bounding box points (top left x, top left y, bottom right x, bottom right y)
         :return:
         """
         self.heatmap_dict[cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
@@ -99,7 +95,7 @@ class Heatmap:
             self.heatmap_dict[i] = np.zeros(shape)
 
 
-def parse_detected(frame, W, H, layerOutputs, LABELS):
+def parse_detected(frame, H, W, layerOutputs, LABELS):
     """
     TODO: credit source for this code
     :param frame: input frame to the object detection
@@ -215,34 +211,31 @@ class ProcessingEngine:
         self.stopwatch = Stopwatch()
         self.threshold = threshold  # minimum number of frames used to perform calibration
         self.matrix_list = []  # used to store matrices during calibration
-
-        # initialize parameters for ARUCO detection (for perspective correction)
+        # initialize parameters for ARUCO detection (used for perspective correction)
         self.aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-        self.debug = debug
-        self.file_type = False
         self.parameters = aruco.DetectorParameters_create()
 
         self.record = False  # flag for whether the class should be generating a heatmap or not
+        self.debug = debug
 
         self.cap_dict = {}  # store the OpenCV captures in a dictionary
         self.detect_dict = {}  # store detected outputs in a dictionary
         self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
 
-        self.cap_num_dict = {}
-
         self.cap_num_dict = {1: (416, 416), 2: (320, 320), 3: (208, 208), 4: (128, 128), 5: (96, 96)}
-
         self.heatmap = Heatmap()
 
-    def add_cameras(self, update_heatmaps=True):
+    def turn_on(self, update_heatmaps=True):
         # add all of the OpenCV captures to self.cap_dict:
         i = 0
         while i < 5:  # support up to 5 different cameras
             cap = cv2.VideoCapture(i)
             if cap.isOpened():
                 # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
-                # for the calibration matrix, and boolean for whether the camera is to be used]
-                self.cap_dict[i] = [cap, 0, 0, 1]
+                # for the calibration matrix, 1, which is boolean for whether the camera is to be used, and (height,
+                # width) of the camera frame]
+                self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                                                   int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
                 print("[INFO] loading YOLO from disk for camera {}...".format(i))
                 self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,
                                                                  self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
@@ -438,37 +431,36 @@ class ProcessingEngine:
         cap = self.cap_dict.get(cap_num)[0]  # select the camera
         _, frame = cap.read()
 
+        # pull out the height and width of the camera frame
+        height = self.cap_dict[cap_num][4][0]
+        width = self.cap_dict[cap_num][4][1]
+
         if self.cap_dict[cap_num][3] == 0:  # if the camera is muted
             frame = frame * 0.2
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
         else:
+            if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
+                if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
+                    # becomes the calibration matrix, the truth value of a multi-element array is ambiguous
+                    frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (height, width))
+                else:  # perform calibration
+                    while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
+                        frame = self.calibrate(cap_num)
+                        return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
             net = self.detect_dict[cap_num]  # select the image processor (net)
-
-            (H, W) = frame.shape[:2]
-
             blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
-                                         swapRB=True, crop=False)
-
-            # run detection on the frame:
-            net.setInput(blob)
+                                         swapRB=True, crop=False)  # pre=process the image for detection
+            net.setInput(blob) # run detection on the frame:
             layerOutputs = net.forward(self.ln)
-            boxes, frame = parse_detected(frame, W, H, layerOutputs, self.LABELS)
+            boxes, frame = parse_detected(frame, height, width, layerOutputs, self.LABELS)
 
             # add bounding boxes to the heatmap
             if self.record:
                 for i in range(len(boxes)):
                     print('cv_classes: ', cap_num)
                     self.heatmap.add_to_heatmap(cap_num, boxes[i])
-
-            if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
-                if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
-                    # becomes the calibration matrix, the truth value of a multi-element array is ambiguous
-                    frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (frame.shape[1], frame.shape[0]))
-                else:  # perform calibration
-                    while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
-                        frame = self.calibrate(cap_num)
-                        return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
@@ -479,11 +471,12 @@ class ProcessingEngine:
 
 if __name__ == "__main__":
     engine = ProcessingEngine(debug=True)
-
+    engine.turn_on()
     # display each camera connected to the computer with a corrected perspective
     while True:
         for cap_num in range(engine.num_caps):
-            frame = engine.get_frame(cap_num, calibrate=True)
+            print ('here')
+            frame = engine.get_frame(cap_num, calibrate=False)
             cv2.imshow("frame {}".format(cap_num), frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 engine.heatmap.show_heatmap(cap_num)

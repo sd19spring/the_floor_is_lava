@@ -74,8 +74,17 @@ def index(error=False):
 
 def select_feeds(error=False):
     if len(engine.cap_dict) == 0:
-        engine.add_cameras()
+        engine.turn_on()
     return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
+
+
+def all_cam_switch():
+    print('here')
+    switch = False if int(request.get_data().decode()) == 1 else True  # switch is a string that represents a dictionary
+    if switch:
+        engine.turn_on()
+    else:
+        engine.turn_off()
 
 
 def more_info(error=False):
@@ -158,7 +167,8 @@ if __name__ == "__main__":
         '/calib_switch': calib_switch,
         '/<CAP_NUM>': eye,
         '/<CAP_NUM>heatmap': heatmap,
-        '/results': results})
+        '/results': results,
+        '/all_cam_switch': all_cam_switch})
 
     # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)
