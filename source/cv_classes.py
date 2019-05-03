@@ -67,7 +67,7 @@ class Heatmap:
         """
         Add the points enclosed by a bounding box to the heatmap
         :param cap_num: index of the camera
-        :param box_points: bounding box poitns (top left x, top left y, bottom right x, bottom right y)
+        :param box_points: bounding box points (top left x, top left y, bottom right x, bottom right y)
         :return:
         """
         self.heatmap_dict[cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
@@ -471,11 +471,12 @@ class ProcessingEngine:
 
 if __name__ == "__main__":
     engine = ProcessingEngine(debug=True)
-
+    engine.turn_on()
     # display each camera connected to the computer with a corrected perspective
     while True:
         for cap_num in range(engine.num_caps):
-            frame = engine.get_frame(cap_num, calibrate=True)
+            print ('here')
+            frame = engine.get_frame(cap_num, calibrate=False)
             cv2.imshow("frame {}".format(cap_num), frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 engine.heatmap.show_heatmap(cap_num)
