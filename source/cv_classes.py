@@ -10,6 +10,7 @@ import cv2.aruco as aruco
 from math import acos, cos, sin
 import numpy as np
 import time
+import datetime
 import os
 
 execution_path = os.getcwd()
@@ -48,20 +49,12 @@ class Heatmap:
 
     def __init__(self):
         self.num_caps = 0  # number of captures (same as ProcessingEngine)
-        self.heatmap_dict = {}  # dictionary to store the heatmaps
+
+        self.all_heatmaps = {}  # dictionary to store heatmaps across multiple trials
+        self.n = -1  # counter for which (sets of) heatmap(s) is currently being recorded to
+
         self.cap_size_dict = {}  # dictionary to store the resolution of the camera frames
 
-    def add_heatmaps(self, cap_dict, num_caps):
-        """
-        Initializes empty heatmaps for each of the connected cameras
-        :param cap_dict: dictionary of OpenCV captures
-        :param num_caps:  number of captures in the dictionary
-        :return: void
-        """
-        self.num_caps = num_caps
-        for i in range(num_caps):
-            self.heatmap_dict[i] = np.zeros((cap_dict[i][4][0], cap_dict[i][4][1]))
-            self.cap_size_dict[i] = (cap_dict[i][4][0], cap_dict[i][4][1])
 
     def add_to_heatmap(self, cap_num, box_points):
         """
@@ -70,7 +63,8 @@ class Heatmap:
         :param box_points: bounding box points (top left x, top left y, bottom right x, bottom right y)
         :return:
         """
-        self.heatmap_dict[cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
+        print(self.all_heatmaps[self.n][cap_num])
+        self.all_heatmaps[self.n][0][cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
 
     def return_heatmap(self, cap_num):
         """
@@ -78,21 +72,44 @@ class Heatmap:
         :param cap_num:  index of the camera
         :return heatmap_img: a numpy.ndarray that is an image representing the heatmap
         """
-        h = self.heatmap_dict[cap_num]  # retrieve the raw heatmap values
+        h = self.all_heatmaps[self.n][0][cap_num]  # retrieve the raw heatmap values
         h = np.interp(h, (0, h.max()), (0, 255))  # rescale the heatmap to 0:255 values
         h = h.astype(np.uint8)  # convert data type for applyColorMap
         heatmap_img = cv2.applyColorMap(h, cv2.COLORMAP_HOT)  # turn matrix into a heatmap
         return heatmap_img
 
-    def reset(self):
+    def reset(self, num_caps, cap_dict):
         """
         Resets the heatmaps using previously stored information about the camera's width and height
         :return: void
         """
-        self.heatmap_dict = {}
-        for i in range(self.num_caps):
-            shape = self.cap_size_dict[i]
-            self.heatmap_dict[i] = np.zeros(shape)
+        self.n += 1
+
+        # [{dictionary to store the heatmaps for each camera}, starting time in seconds, ending time in seconds,
+        # duration, display starting time, display end time]
+        self.all_heatmaps[self.n] = [{}, datetime.datetime.now(), 0, 0, time.ctime(), 0]
+        for i in range(num_caps):
+            shape = cap_dict[i][4]  # extract the dimensions of the cameras
+            self.cap_size_dict[i] = (cap_dict[i][4][0], cap_dict[i][4][1])  # update the capture size dictionary
+            self.all_heatmaps[self.n][0][i] = np.zeros(shape)
+
+    def record_end_time(self):
+        self.all_heatmaps[self.n][2] = datetime.datetime.now()  # record ending time in seconds
+        self.all_heatmaps[self.n][3] = str(self.all_heatmaps[self.n][2] - self.all_heatmaps[self.n][1]) # compute duration
+        self.all_heatmaps[self.n][5] = time.ctime()
+
+    def get_time_info(self, n):
+        """
+        Returns the time information associated with recording n
+        :param n: index of the recording to be returned. If n == -1, then use the most recent scan.
+        :return: start time, end time, and duration (in one string)
+        """
+        if n == -1:
+            return "Start time: " + self.all_heatmaps[self.n][4] + " End time: " \
+                "" + self.all_heatmaps[self.n][5] + " Duration: " + self.all_heatmaps[self.n][3]
+        else:
+            return "Start time: " + self.all_heatmaps[n][4] + " End time: " \
+                "" + self.all_heatmaps[n][5] + " Duration: " + self.all_heatmaps[n][3]
 
 
 class ProcessingEngine:
@@ -128,7 +145,7 @@ class ProcessingEngine:
         self.cap_num_dict = {1: (416, 416), 2: (320, 320), 3: (208, 208), 4: (128, 128), 5: (96, 96)}
         self.heatmap = Heatmap()
 
-    def turn_on(self, update_heatmaps=True):
+    def turn_on(self):
         # add all of the OpenCV captures to self.cap_dict:
         i = 0
         while i < 5:  # support up to 5 different cameras
@@ -154,10 +171,6 @@ class ProcessingEngine:
                 self.num_caps = i
                 break
             i += 1
-
-        # update the heatmaps
-        if update_heatmaps:
-            self.heatmap.add_heatmaps(self.cap_dict, self.num_caps)
 
     def turn_off(self, update_heatmaps=True, reset_detection=True):
         """
@@ -203,6 +216,14 @@ class ProcessingEngine:
         if toggle == 0:  # reset the calibration matrix if the perspective correction is being turned off
             self.cap_dict[capNum][2] = 0
         return None
+
+    def start_recording(self):
+        self.record = True
+        self.heatmap.reset(self.num_caps, self.cap_dict)
+
+    def stop_recording(self):
+        self.record = False
+        self.heatmap.record_end_time()
 
     def calibrate(self, cap_num, frame):
         """
@@ -351,8 +372,7 @@ class ProcessingEngine:
         for output in layerOutputs:
             # loop over each of the detections
             for detection in output:
-                # extract the class ID and confidence (i.e., probability) of
-                # the current object detection
+                # extract the class ID and confidence (i.e., probability) of the current object detection
                 scores = detection[5:]
                 classID = np.argmax(scores)
 
