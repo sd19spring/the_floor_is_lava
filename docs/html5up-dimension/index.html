@@ -6,6 +6,7 @@
 -->
 <html>
 	<head>
+		<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=ruby&amp;skin=desert"></script>
 		<title>Dimension by HTML5 UP</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
@@ -80,7 +81,7 @@
 						<!-- Work -->
 							<article id="work">
 								<h2 class="major">How To Run</h2>
-								<span class="image main"><img src="images/pic02.jpg" alt="" /></span>
+								<span class="image main"><img src="images/lava.gif" height="200" width="50" alt="" /></span>
 								<p>First you will need to clone the repo, The Floor is Lava, to your computer. Make sure you have the correct modules downloaded as specified in the README files. When launching this script, there are several steps that need to be taken.
 It begins with the following..
 								<ol>
@@ -104,11 +105,71 @@ Super helpful for debugging.</li>
 								<h2 class="major">About</h2>
 								<p>So, you may be wondering, how does the code work? Let's begin with <b>app.py</b> script below that runs the Web App.
 									These snipets display the packages being implemented and some of the function created to make this work.</p>
-								<img src="images/Snipet1.png" alt="" height="400" width="500" ></img>
-								<img src="images/Snipet2.png" alt="" height="400" width="500" ></img>
-								<p> There are important classes that were integrated including a Heatmap, Stopwatch, ProcessingEngine that were created in order to frame it all together. See below.</p>
-								<img src="images/Snipet3.png" alt="" height="400" width="500" ></img>
-								<img src="images/Snipet4.png" alt="" height="400" width="500" ></img>
+									<img src="images/Snipet1.png" alt="" height="400" width="500" ></img>
+									<img src="images/Snipet2.png" alt="" height="400" width="500" ></img>
+									<p> There are important classes that were integrated including a Heatmap, Stopwatch, ProcessingEngine that were created in order to frame it all together. See below.</p>
+									<pre class="prettyprint">
+def get_frame(self, cap_num, calibrate=False):
+"""
+Returns the captured frame that is warped by
+the calibration_matrix
+:param: cap_num - index number of the OpenCV capture
+:param: calibrate - boolean for whether the frame should
+be perspective corrected
+:return: frame or frame converted to bytes, depending on use case
+"""
+# if the camera is set to off, then dim the frame by x0.2
+
+cap = self.cap_dict.get(cap_num)[0]  # select the camera
+_, frame = cap.read()
+
+# pull out the height and width of the camera frame
+height = self.cap_dict[cap_num][4][0]
+width = self.cap_dict[cap_num][4][1]
+
+if self.cap_dict[cap_num][3] == 0:
+# if the camera is muted
+  frame = frame * 0.2
+  return frame if self.debug else cv2.imencode
+	('.jpg', frame)[1].tobytes()
+
+else:
+  if self.cap_dict[cap_num][1] == 1 or calibrate == True:
+# if the camera is in calibration mode:
+      if type(self.cap_dict[cap_num][2]) != int:
+# already calibrated if true; compare type because when it
+# becomes the calibration matrix, the truth value
+	of a multi-element array is ambiguous
+  frame = cv2.warpPerspective(frame,self.cap_dict[cap_num][2], (height, width))
+      else:
+# perform calibration
+          while self.cap_dict[cap_num][2] == 0:
+# not yet calibrated
+              frame = self.calibrate(cap_num)
+              return frame if self.debug else
+							cv2.imencode('.jpg', frame)[1].tobytes()
+
+  net = self.detect_dict[cap_num]
+	# select the image processor (net)
+  blob = cv2.dnn.blobFromImage(frame, 1 / 255.0,
+	self.cap_num_dict[self.num_caps],
+  swapRB=True, crop=False)
+# pre=process the image for detection
+  net.setInput(blob)
+# run detection on the frame:
+  layerOutputs = net.forward(self.ln)
+  boxes, frame = parse_detected(frame,
+	height, width, layerOutputs, self.LABELS)
+
+# add bounding boxes to the heatmap
+  if self.record:
+      for i in range(len(boxes)):
+          print('cv_classes: ', cap_num)
+          self.heatmap.add_to_heatmap(cap_num, boxes[i])
+
+  return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+									</pre>
+
 							</article>
 
 						<!-- Contact -->

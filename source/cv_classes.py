@@ -10,6 +10,7 @@ import cv2.aruco as aruco
 from math import acos, cos, sin
 import numpy as np
 import time
+import datetime
 import os
 
 execution_path = os.getcwd()
@@ -48,20 +49,12 @@ class Heatmap:
 
     def __init__(self):
         self.num_caps = 0  # number of captures (same as ProcessingEngine)
-        self.heatmap_dict = {}  # dictionary to store the heatmaps
+
+        self.all_heatmaps = {}  # dictionary to store heatmaps across multiple trials
+        self.n = -1  # counter for which (sets of) heatmap(s) is currently being recorded to
+
         self.cap_size_dict = {}  # dictionary to store the resolution of the camera frames
 
-    def add_heatmaps(self, cap_dict, num_caps):
-        """
-        Initializes empty heatmaps for each of the connected cameras
-        :param cap_dict: dictionary of OpenCV captures
-        :param num_caps:  number of captures in the dictionary
-        :return: void
-        """
-        self.num_caps = num_caps
-        for i in range(num_caps):
-            self.heatmap_dict[i] = np.zeros((cap_dict[i][4][0], cap_dict[i][4][1]))
-            self.cap_size_dict[i] = (cap_dict[i][4][0], cap_dict[i][4][1])
 
     def add_to_heatmap(self, cap_num, box_points):
         """
@@ -70,7 +63,8 @@ class Heatmap:
         :param box_points: bounding box points (top left x, top left y, bottom right x, bottom right y)
         :return:
         """
-        self.heatmap_dict[cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
+        print(self.all_heatmaps[self.n][cap_num])
+        self.all_heatmaps[self.n][0][cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
 
     def return_heatmap(self, cap_num):
         """
@@ -78,118 +72,44 @@ class Heatmap:
         :param cap_num:  index of the camera
         :return heatmap_img: a numpy.ndarray that is an image representing the heatmap
         """
-        h = self.heatmap_dict[cap_num]  # retrieve the raw heatmap values
+        h = self.all_heatmaps[self.n][0][cap_num]  # retrieve the raw heatmap values
         h = np.interp(h, (0, h.max()), (0, 255))  # rescale the heatmap to 0:255 values
         h = h.astype(np.uint8)  # convert data type for applyColorMap
         heatmap_img = cv2.applyColorMap(h, cv2.COLORMAP_HOT)  # turn matrix into a heatmap
         return heatmap_img
 
-    def reset(self):
+    def reset(self, num_caps, cap_dict):
         """
         Resets the heatmaps using previously stored information about the camera's width and height
         :return: void
         """
-        self.heatmap_dict = {}
-        for i in range(self.num_caps):
-            shape = self.cap_size_dict[i]
-            self.heatmap_dict[i] = np.zeros(shape)
+        self.n += 1
 
+        # [{dictionary to store the heatmaps for each camera}, starting time in seconds, ending time in seconds,
+        # duration, display starting time, display end time]
+        self.all_heatmaps[self.n] = [{}, datetime.datetime.now(), 0, 0, time.ctime(), 0]
+        for i in range(num_caps):
+            shape = cap_dict[i][4]  # extract the dimensions of the cameras
+            self.cap_size_dict[i] = (cap_dict[i][4][0], cap_dict[i][4][1])  # update the capture size dictionary
+            self.all_heatmaps[self.n][0][i] = np.zeros(shape)
 
-def parse_detected(frame, H, W, layerOutputs, LABELS):
-    """
-    TODO: credit source for this code
-    :param frame: input frame to the object detection
-    :param w: width of the frame
-    :param h: height of the frame
-    :param layerOutputs: output from the object detection
-    :param LABELS: labels for the YOLO model
-    :return: boxes, frame_copy: bounding boxes for the detected people, a copy of the frame with bounding boxes drawn
-    """
-    boxes = []
-    confidences = []
-    classIDs = []
+    def record_end_time(self):
+        self.all_heatmaps[self.n][2] = datetime.datetime.now()  # record ending time in seconds
+        self.all_heatmaps[self.n][3] = str(self.all_heatmaps[self.n][2] - self.all_heatmaps[self.n][1]) # compute duration
+        self.all_heatmaps[self.n][5] = time.ctime()
 
-    # loop over each of the layer outputs
-    for output in layerOutputs:
-        # loop over each of the detections
-        for detection in output:
-            # extract the class ID and confidence (i.e., probability) of
-            # the current object detection
-            scores = detection[5:]
-            classID = np.argmax(scores)
-
-            confidence = scores[classID]
-
-            # filter out weak predictions by ensuring the detected
-            # probability is greater than the minimum probability
-            if confidence > DETECTION_THRESHOLD:
-                # scale the bounding box coordinates back relative to the
-                # size of the image, keeping in mind that YOLO actually
-                # returns the center (x, y)-coordinates of the bounding
-                # box followed by the boxes' width and height
-                box = detection[0:4] * np.array([W, H, W, H])
-                (centerX, centerY, width, height) = box.astype("int")
-
-                # use the center (x, y)-coordinates to derive the top and
-                # and left corner of the bounding box
-                x = int(centerX - (width / 2))
-                y = int(centerY - (height / 2))
-
-                # update our list of bounding box coordinates, confidences,
-                # and class IDs
-                boxes.append([x, y, int(width), int(height)])
-                confidences.append(float(confidence))
-                classIDs.append(classID)
-
-    # apply non-maxima suppression to suppress weak, overlapping bounding
-    # boxes
-    idxs = cv2.dnn.NMSBoxes(boxes, confidences, DETECTION_THRESHOLD, 0.3)
-
-    # ensure at least one detection exists
-    if len(idxs) > 0:
-        # loop over the indexes we are keeping
-        for i in idxs.flatten():
-            if LABELS[classIDs[i]] != 'person':
-                frame_copy = frame
-                return [], frame_copy
-            else:
-                # extract the bounding box coordinates
-                (x, y) = (boxes[i][0], boxes[i][1])
-                (w, h) = (boxes[i][2], boxes[i][3])
-
-                boxes[i][2] = x + w
-                boxes[i][3] = y + h
-
-                # draw a bounding box rectangle and label on the image
-                color = (157, 161, 100)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-                text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
-                cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5, color, 2)
-    frame_copy = frame
-    return boxes, frame_copy
-
-
-def find_square_dest(square):
-    """
-    Infers what the calibration square would look like if it was orthogonal to the camera. This is set later as the
-    destination square: square_dest. The destination square is used for warping the camera perspective to a desireable
-    one.
-
-    :param square: list of 4 tuples (coordinates)
-    :return: np.float32 list of 4 tuples (coordinates)
-    """
-    # vector of bottom edge of the calibration square, placed at the origin
-    bottom_edge_orig = np.float32([square[2][0] - square[3][0], square[2][1] - square[3][1]])
-    mbe = np.linalg.norm(bottom_edge_orig)  # length (magnitude) of the bottom edge (mbe)
-    unit_bottom_edge = bottom_edge_orig / mbe  # bottom edge vector changed to length of 1
-    theta = abs(acos(unit_bottom_edge.dot(np.float32([1, 0]))))  # absolute angle between horizontal and bottom edge
-    # set up the rotation matrix:
-    rotation_matrix = np.float32([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
-    # template for the destination square (to be modified by rotation matrix)
-    orig_square_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
-    # apply the rotation matrix to the original square, translated to match the position of observed calibration square
-    return orig_square_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
+    def get_time_info(self, n):
+        """
+        Returns the time information associated with recording n
+        :param n: index of the recording to be returned. If n == -1, then use the most recent scan.
+        :return: start time, end time, and duration (in one string)
+        """
+        if n == -1:
+            return "Start time: " + self.all_heatmaps[self.n][4] + " End time: " \
+                "" + self.all_heatmaps[self.n][5] + " Duration: " + self.all_heatmaps[self.n][3]
+        else:
+            return "Start time: " + self.all_heatmaps[n][4] + " End time: " \
+                "" + self.all_heatmaps[n][5] + " Duration: " + self.all_heatmaps[n][3]
 
 
 class ProcessingEngine:
@@ -225,7 +145,7 @@ class ProcessingEngine:
         self.cap_num_dict = {1: (416, 416), 2: (320, 320), 3: (208, 208), 4: (128, 128), 5: (96, 96)}
         self.heatmap = Heatmap()
 
-    def turn_on(self, update_heatmaps=True):
+    def turn_on(self):
         # add all of the OpenCV captures to self.cap_dict:
         i = 0
         while i < 5:  # support up to 5 different cameras
@@ -251,10 +171,6 @@ class ProcessingEngine:
                 self.num_caps = i
                 break
             i += 1
-
-        # update the heatmaps
-        if update_heatmaps:
-            self.heatmap.add_heatmaps(self.cap_dict, self.num_caps)
 
     def turn_off(self, update_heatmaps=True, reset_detection=True):
         """
@@ -301,7 +217,15 @@ class ProcessingEngine:
             self.cap_dict[capNum][2] = 0
         return None
 
-    def calibrate(self, cap_num):
+    def start_recording(self):
+        self.record = True
+        self.heatmap.reset(self.num_caps, self.cap_dict)
+
+    def stop_recording(self):
+        self.record = False
+        self.heatmap.record_end_time()
+
+    def calibrate(self, cap_num, frame):
         """
         Calibrates the camera so that the perspective of the camera will always be orthogonal to the floor or whatever
         surface it is calibrated with. To do this, it looks for the marker calibration sheet. When it finds the markers,
@@ -313,15 +237,8 @@ class ProcessingEngine:
 
         :return: frame or frame converted to bytes, depending on use case
         """
-        if self.debug:
-            # for visualizing the corners of the markers in debug mode
-            colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
-
-        cap = self.cap_dict[cap_num][0]  # select the camera to be calibrated
-        _, frame = cap.read()
-
-        frame_x = frame.shape[1]  # number of pixels wide the camera frame is
-        frame_y = frame.shape[0]  # number of pixels tall the camera frame is
+        frame_x = self.cap_dict[cap_num][4][1]  # number of pixels wide the camera frame is
+        frame_y = self.cap_dict[cap_num][4][0]  # number of pixels tall the camera frame is
         frame_x_c = int(frame_x / 2)  # center of the camera frame in the x direction
 
         # detect the ARUCO markers
@@ -367,10 +284,24 @@ class ProcessingEngine:
                 marker = markers_dict[i]
                 square.append(tuple(marker[i]))
 
-            # infer what the calibration square should look like if the camera was orthogonal
-            square_dest = find_square_dest(square)
+            # The following section of code Infers what the calibration square would look like if it was orthogonal to
+            # the camera. This is set later as the destination square: square_dest. The destination square is used for
+            # warping the camera perspective to a desireable one.
 
-            ##### Visualization
+            # vector of bottom edge of the calibration square, placed at the origin:
+            bottom_edge_orig = np.float32([square[2][0] - square[3][0], square[2][1] - square[3][1]])
+            mbe = np.linalg.norm(bottom_edge_orig)  # length (magnitude) of the bottom edge (mbe)
+            unit_bottom_edge = bottom_edge_orig / mbe  # bottom edge vector changed to length of 1
+            # absolute angle between horizontal and bottom edge:
+            theta = abs(acos(unit_bottom_edge.dot(np.float32([1, 0]))))
+            # set up the rotation matrix:
+            rotation_matrix = np.float32([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
+            # template for the destination square (to be modified by rotation matrix)
+            orig_square_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
+            # apply the rotation matrix to the original square, translated to match the position of observed calibration square
+            square_dest =  orig_square_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
+
+            # Visualization:
             if self.debug:
                 # colors that will be used to test whether the order of the stored data is correct
                 colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
@@ -419,6 +350,83 @@ class ProcessingEngine:
                 self.stopwatch.log_time()  # log the time
                 return frame
 
+    def _parse_detected(self, frame, layerOutputs, cap_num):
+        """
+        TODO: credit source for this code and add description in docstring
+        :param frame: input frame to the object detection
+        :param w: width of the frame
+        :param h: height of the frame
+        :param layerOutputs: output from the object detection
+        :param LABELS: labels for the YOLO model
+        :return: boxes, frame_copy: bounding boxes for the detected people, a copy of the frame with bounding boxes drawn
+        """
+        boxes = []
+        confidences = []
+        classIDs = []
+
+        # frame width and height
+        W = self.cap_dict[cap_num][4][1]
+        H = self.cap_dict[cap_num][4][0]
+
+        # loop over each of the layer outputs
+        for output in layerOutputs:
+            # loop over each of the detections
+            for detection in output:
+                # extract the class ID and confidence (i.e., probability) of the current object detection
+                scores = detection[5:]
+                classID = np.argmax(scores)
+
+                confidence = scores[classID]
+
+                # filter out weak predictions by ensuring the detected
+                # probability is greater than the minimum probability
+                if confidence > DETECTION_THRESHOLD:
+                    # scale the bounding box coordinates back relative to the
+                    # size of the image, keeping in mind that YOLO actually
+                    # returns the center (x, y)-coordinates of the bounding
+                    # box followed by the boxes' width and height
+                    box = detection[0:4] * np.array([W, H, W, H])
+                    (centerX, centerY, width, height) = box.astype("int")
+
+                    # use the center (x, y)-coordinates to derive the top and
+                    # and left corner of the bounding box
+                    x = int(centerX - (width / 2))
+                    y = int(centerY - (height / 2))
+
+                    # update our list of bounding box coordinates, confidences,
+                    # and class IDs
+                    boxes.append([x, y, int(width), int(height)])
+                    confidences.append(float(confidence))
+                    classIDs.append(classID)
+
+        # apply non-maxima suppression to suppress weak, overlapping bounding
+        # boxes
+        idxs = cv2.dnn.NMSBoxes(boxes, confidences, DETECTION_THRESHOLD, 0.3)
+
+        # ensure at least one detection exists
+        if len(idxs) > 0:
+            # loop over the indexes we are keeping
+            for i in idxs.flatten():
+                if self.LABELS[classIDs[i]] != 'person':
+                    frame_copy = frame
+                    return [], frame_copy
+                else:
+                    # extract the bounding box coordinates
+                    (x, y) = (boxes[i][0], boxes[i][1])
+                    (w, h) = (boxes[i][2], boxes[i][3])
+
+                    boxes[i][2] = x + w
+                    boxes[i][3] = y + h
+
+                    # draw a bounding box rectangle and label on the image
+                    color = (157, 161, 100)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+                    text = "{}: {:.4f}".format(self.LABELS[classIDs[i]], confidences[i])
+                    cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
+                                0.5, color, 2)
+        frame_copy = frame
+        return boxes, frame_copy
+
     def get_frame(self, cap_num, calibrate=False):
         """
         Returns the captured frame that is warped by the calibration_matrix
@@ -446,7 +454,7 @@ class ProcessingEngine:
                     frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (height, width))
                 else:  # perform calibration
                     while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
-                        frame = self.calibrate(cap_num)
+                        frame = self.calibrate(cap_num, frame)
                         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
             net = self.detect_dict[cap_num]  # select the image processor (net)
@@ -454,7 +462,7 @@ class ProcessingEngine:
                                          swapRB=True, crop=False)  # pre=process the image for detection
             net.setInput(blob) # run detection on the frame:
             layerOutputs = net.forward(self.ln)
-            boxes, frame = parse_detected(frame, height, width, layerOutputs, self.LABELS)
+            boxes, frame = self._parse_detected(frame, layerOutputs, cap_num)
 
             # add bounding boxes to the heatmap
             if self.record:
@@ -472,6 +480,7 @@ class ProcessingEngine:
 if __name__ == "__main__":
     engine = ProcessingEngine(debug=True)
     engine.turn_on()
+    engine.record = True
     # display each camera connected to the computer with a corrected perspective
     while True:
         for cap_num in range(engine.num_caps):
