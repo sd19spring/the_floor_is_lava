@@ -181,7 +181,7 @@ if __name__ == "__main__":
         '/results': results,
         '/all_cam_switch': all_cam_switch,
         '/send_recording_info': send_recording_info,
-        '/uploader':upload_file})})
+        '/uploader':upload_file})
 
     # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)
