@@ -142,7 +142,7 @@ class ProcessingEngine:
         self.detect_dict = {}  # store detected outputs in a dictionary
         self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
 
-        self.cap_num_dict = {1: (416, 416), 2: (320, 320), 3: (208, 208), 4: (128, 128), 5: (96, 96)}
+        self.cap_num_dict = {1: (208, 208), 2: (128, 128), 3: (96, 96)}
         self.heatmap = Heatmap()
 
     def turn_on(self):
@@ -458,6 +458,7 @@ class ProcessingEngine:
                         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
             net = self.detect_dict[cap_num]  # select the image processor (net)
+            print("#####################################",self.cap_num_dict[self.num_caps])
             blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
                                          swapRB=True, crop=False)  # pre=process the image for detection
             net.setInput(blob) # run detection on the frame:
@@ -470,11 +471,23 @@ class ProcessingEngine:
                     print('cv_classes: ', cap_num)
                     self.heatmap.add_to_heatmap(cap_num, boxes[i])
 
+                heat_overlay = self.heatmap.return_heatmap(cap_num)
+                frame = cv2.addWeighted(frame, 0.4, heat_overlay, 0.6, 0)
+
             return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
     def show_heatmap(self, cap_num):
-        heat_img = self.heatmap.return_heatmap(cap_num)
-        return heat_img if self.debug else cv2.imencode('.jpg', heat_img)[1].tobytes()
+        """
+        This is a parred-down version of get_frame() that is used just for the get_results page
+        :param cap_num: index of the camera desired
+        :return: frame to be displayed
+        """
+        heat_overlay = self.heatmap.return_heatmap(cap_num)
+
+        cap = self.cap_dict.get(cap_num)[0]  # select the camera
+        _, frame = cap.read()
+        frame = cv2.addWeighted(frame, 0.2, heat_overlay, 0.8, 0)
+        return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
 
 if __name__ == "__main__":
