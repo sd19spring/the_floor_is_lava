@@ -26,6 +26,14 @@
             <p class="fa-paragraph" style="text-align: left">See every camera connected to your computer. Choose which
                 ones to ignore or keep for analysis. Click "perspective correct" for cameras that are pointed at an
                 angle.</p>
+                <p>Alternatively, you can select a file to upload here:</p>
+
+                <form action = "http://localhost:8080/uploader" method = "POST"
+                   enctype = "multipart/form-data">
+                   <input type = "file" name = "file" />
+                   <input type = "submit"/>
+                </form>
+                <br>
             <div onclick="changeSwitch('/record_button_receiver')" class="cover button" id="switch"><a>Create
                 Heatmap 🔨</a></div>
             <br>
