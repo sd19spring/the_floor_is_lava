@@ -149,6 +149,13 @@ def heatmap_feed(engine, cap_num):
     while True:
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.show_heatmap(int(cap_num)) + b'\r\n')
 
+def upload_file():
+   if request.method == 'POST':
+      f = request.files['file']
+      f.save("./videos/"+f.filename)
+      # Create new cv2 cap, add to end of list
+      # Update engine.num_caps
+      return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
 
 # Create a processing engine. Although it generally isn't good practice to do this in the body of the document, the
 # object needs to be a global instance so that only one is created no matter how many cameras are created. Also, the
@@ -171,7 +178,8 @@ if __name__ == "__main__":
         '/<CAP_NUM>heatmap': heatmap,
         '/results': results,
         '/all_cam_switch': all_cam_switch,
-        '/send_recording_info': send_recording_info})
+        '/send_recording_info': send_recording_info,
+        '/uploader':upload_file})})
 
     # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)
