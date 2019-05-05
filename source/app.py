@@ -15,18 +15,20 @@ def record_button_receiver():
     """
     record = request.get_data().decode()
 
-    # reset the heatmap for the next recording
-    if not engine.record:
-        engine.heatmap.reset()
-
     # flip the switch
     if record == 'true':
-        engine.record = True
+        engine.start_recording()
     else:
-        engine.record = False
+        engine.stop_recording()
+        send_recording_info()
 
     # return 'none' and not None because Flask doesn't like it when None is returned.
     return 'none'
+
+
+def send_recording_info():
+    Response("Stats for recording num. {}".format(engine.heatmap.n) + engine.heatmap.get_time_info(-1),
+             mimetype='text/plain')
 
 
 def cap_switch():
@@ -168,7 +170,8 @@ if __name__ == "__main__":
         '/<CAP_NUM>': eye,
         '/<CAP_NUM>heatmap': heatmap,
         '/results': results,
-        '/all_cam_switch': all_cam_switch})
+        '/all_cam_switch': all_cam_switch,
+        '/send_recording_info': send_recording_info})
 
     # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)
