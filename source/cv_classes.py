@@ -143,9 +143,35 @@ class ProcessingEngine:
         self.cap_num_dict = {1: (320, 320), 2: (128, 128), 3: (96, 96)}
         self.heatmap = Heatmap()
 
-    def turn_on(self):
-        # add all of the OpenCV captures to self.cap_dict:
+    def turn_on(self, filename=''):
         i = 0
+        # If a filename is specified, do no camera feeds.
+        if filename != '':
+            cap = cv2.VideoCapture(filename)
+            if cap.isOpened():
+                # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
+                # for the calibration matrix, 1, which is boolean for whether the camera is to be used, and (height,
+                # width) of the camera frame]
+                print(type(self.cap_dict))
+                self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                                                   int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
+                print("[INFO] loading YOLO from disk for file {}...".format(filename))
+                self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
+                print("[INFO] finished loading YOLO for file {}...".format(filename))
+                if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
+                    #  the at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
+                    # be initialized.
+
+                    # determine only the *output* layer names that we need from YOLO
+                    self.ln = self.detect_dict[i].getLayerNames()
+                    self.ln = [self.ln[i[0] - 1] for i in self.detect_dict[i].getUnconnectedOutLayers()]
+                    self.num_caps = 1
+                    return
+            else:  # The file did not load correctly
+            # TODO: Handle this case better
+                self.num_caps = 0
+                return
+        # add all of the OpenCV captures to self.cap_dict:
         while i < 5:  # support up to 5 different cameras
             cap = cv2.VideoCapture(i)
             if cap.isOpened():
@@ -165,6 +191,7 @@ class ProcessingEngine:
                     # determine only the *output* layer names that we need from YOLO
                     self.ln = self.detect_dict[i].getLayerNames()
                     self.ln = [self.ln[i[0] - 1] for i in self.detect_dict[i].getUnconnectedOutLayers()]
+
             else:  # all the cameras that can be detected have been, so break the loop:
                 self.num_caps = i
                 break
@@ -176,20 +203,19 @@ class ProcessingEngine:
         :param update_heatmaps: a boolean for whether the heatmaps should also be reset
         :return: void
         """
+        if update_heatmaps:
+            self.heatmap.reset(self.num_caps,self.cap_dict)
 
         # TODO: currently not used...
         for i in range(self.num_caps):
             cap = self.cap_dict[i]
-            cap.release()
+            cap[0].release()
 
         self.cap_dict = {}
         self.num_caps = 0
 
-        if update_heatmaps:
-            self.heatmap.reset()
-
         if reset_detection:
-            self.detect_dict = 0
+            self.detect_dict = {}
             self.ln = 0
 
     def cap_toggle(self, capNum, toggle):

@@ -158,7 +158,9 @@ def upload_file():
    if request.method == 'POST':
       f = request.files['file']
       f.save("./videos/"+f.filename)
-      # Create new cv2 cap, add to end of list
+      # Clear camera feeds from dict, reinit with file as source
+      engine.turn_off()
+      engine.turn_on("./videos/"+f.filename)
       # Update engine.num_caps
       return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
 
