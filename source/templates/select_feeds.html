@@ -26,18 +26,22 @@
             <p class="fa-paragraph" style="text-align: left">See every camera connected to your computer. Choose which
                 ones to ignore or keep for analysis. Click "perspective correct" for cameras that are pointed at an
                 angle.</p>
-                <p>Alternatively, you can select a file to upload here:</p>
+
+            <div style="border-color: black; border-width: 2px; padding: 1rem; border-style: solid; border-radius: 1rem">
+                <p class="fa-paragraph" style="text-align: left">Alternatively, you can select a file to upload here:</p>
 
                 <form action = "http://localhost:8080/uploader" method = "POST"
                    enctype = "multipart/form-data">
-                   <input type = "file" name = "file" class="cover button_red_small"/>
-                   <input type = "submit"  class="cover button_red_small"/>
+                    <div><input type = "file" name = "file" class="cover button_small"/></div>
+                    <div style="height: 0.5rem;"></div>
+                   <div><input type = "submit"  class="cover button_small"/></div>
                 </form>
-                <br>
+            </div>
+            <br>
             <div onclick="changeSwitch('/record_button_receiver')" class="cover button" id="switch">
                 <a>Create Heatmap 🔨</a>
             </div>
-            <div id="recordingInfo">Hello</div>
+            <div id="recordingInfo"></div>
             <script>
                 // This script updates the recording information in the above div
                 setInterval(function() { update_values() }, 1000);
