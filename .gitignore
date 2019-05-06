@@ -109,4 +109,4 @@ archive/pedestrian_detection_opencv/Time Lapse - Adorama Camera.mp4
 .xml
 .idea
 
-source/yolo-coco/*
+source/api/yolo-coco/*
