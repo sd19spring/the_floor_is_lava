@@ -117,12 +117,15 @@ class ProcessingEngine:
 
     def __init__(self, threshold=30, debug=False):
         # load the COCO class labels our YOLO model was trained on
-        labelsPath = os.path.sep.join(["yolo-coco", "coco.names"])
+        cwd = os.getcwd()
+        print(cwd)
+        labelsPath = os.path.sep.join(["api/yolo-coco", "coco.names"])
         self.LABELS = open(labelsPath).read().strip().split("\n")
 
         # derive the paths to the YOLO weights and model configuration
-        self.weightsPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.weights"])
-        self.configPath = os.path.sep.join([os.getcwd(), 'yolo-coco', "yolov3.cfg"])
+        self.weightsPath = os.path.sep.join([cwd, 'api/yolo-coco', "yolov3.weights"])
+        self.configPath = os.path.sep.join([cwd, 'api/yolo-coco', "yolov3.cfg"])
+
         self.ln = 0
 
         self.n = 0  # counter for the calibration process
