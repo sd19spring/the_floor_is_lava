@@ -27,7 +27,7 @@
                 ones to ignore or keep for analysis. Click "perspective correct" for cameras that are pointed at an
                 angle.</p>
 
-            <div style="border-color: black; border-width: 2px; padding: 1rem; border-style: solid; border-radius: 1rem">
+            <div class="lightgray_box">
                 <p class="fa-paragraph" style="text-align: left">Alternatively, you can select a file to upload here:</p>
 
                 <form action = "http://localhost:8080/uploader" method = "POST"
@@ -41,20 +41,24 @@
             <div onclick="changeSwitch('/record_button_receiver')" class="cover button" id="switch">
                 <a>Create Heatmap 🔨</a>
             </div>
-            <div id="recordingInfo"></div>
-            <script>
-                // This script updates the recording information in the above div
-                setInterval(function() { update_values() }, 1000);
-                function update_values() {
-                    $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-                    $.getJSON($SCRIPT_ROOT+"/send_recording_info",
-                        function(data) {
-                           document.getElementById('recordingInfo').innerText=data.text;
-                        });
-                }
-            </script>
             <br>
-            <a style="visibility: hidden" href="/results" class="cover button" id="result">See Results ➡</a>
+            <div class="lightgray_box">
+                <div id="recordingInfo"></div>
+                <script>
+                    // This script updates the recording information in the above div
+                    setInterval(function() { update_values() }, 1000);
+                    function update_values() {
+                        $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+                        $.getJSON($SCRIPT_ROOT+"/send_recording_info",
+                            function(data) {
+                               document.getElementById('recordingInfo').innerText=data.text;
+                            });
+                    }
+                </script>
+                <br>
+                <a style="visibility: hidden" href="/results" class="cover button" id="result">See previous recordings➡</a>
+                <br>
+            </div>
         </div>
     </div>
     <footer class="mastfoot mt-auto">
