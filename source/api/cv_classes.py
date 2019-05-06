@@ -18,33 +18,9 @@ execution_path = os.getcwd()
 DETECTION_THRESHOLD = 0.6  # minimum confidence level for person to be recognized
 
 
-class Stopwatch:
-    """
-    A utility for the calibrate() method of the ProcessingEngine class; acts as a stopwatch.
-    """
-
-    def __init__(self):
-        self.logged_time = time.time()
-        self.time_since_last_check = 0
-
-    def log_time(self):
-        """
-        Record the current time
-        """
-        self.logged_time = time.time()
-
-    def check_stopwatch(self):
-        """
-        Check the elapsed time between when this method is called and when the stopwatch time was last logged.
-        :return: self.time_since_last_check
-        """
-        self.time_since_last_check = time.time() - self.logged_time
-        return self.time_since_last_check
-
-
 class Heatmap:
     """
-    This class stores and renders the heatmaps generated from the object detection in ProcessingEngine
+    This class stores, calculates, and renders the heatmaps generated from the object detection in ProcessingEngine
     """
 
     def __init__(self):
@@ -54,7 +30,6 @@ class Heatmap:
         self.n = -1  # counter for which (sets of) heatmap(s) is currently being recorded to
 
         self.cap_size_dict = {}  # dictionary to store the resolution of the camera frames
-
 
     def add_to_heatmap(self, cap_num, box_points):
         """
@@ -94,7 +69,10 @@ class Heatmap:
 
     def record_end_time(self):
         self.all_heatmaps[self.n][2] = datetime.datetime.now()  # record ending time in seconds
-        self.all_heatmaps[self.n][3] = str(self.all_heatmaps[self.n][2] - self.all_heatmaps[self.n][1]) # compute duration
+        print('#########################################################')
+        delta = str(self.all_heatmaps[self.n][2] - self.all_heatmaps[self.n][1])  # compute duration of recording
+        delta = delta[0:len(delta) - 7]  # round the time
+        self.all_heatmaps[self.n][3] = delta
         self.all_heatmaps[self.n][5] = time.ctime()
 
     def get_time_info(self):
@@ -103,11 +81,10 @@ class Heatmap:
         :param n: index of the recording to be returned. If n == -1, then use the most recent scan.
         :return: start time, end time, and duration (in one string)
         """
-        if self.n != -1:
-            return "Start time: " + str(self.all_heatmaps[self.n][4]) + " End time: " \
-                "" + str(self.all_heatmaps[self.n][5]) + " Duration: " + str(self.all_heatmaps[self.n][3])
-        else:
-            return "--:--:--"
+
+        return "Start time: " + str(self.all_heatmaps[self.n][4]) + " End time: " \
+                                                                    "" + str(
+            self.all_heatmaps[self.n][5]) + " Duration: " + str(self.all_heatmaps[self.n][3])
 
 
 class ProcessingEngine:
@@ -159,7 +136,8 @@ class ProcessingEngine:
                 self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
                                                    int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
                 print("[INFO] loading YOLO from disk for file {}...".format(filename))
-                self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
+                self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,
+                                                                 self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
                 print("[INFO] finished loading YOLO for file {}...".format(filename))
                 if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
                     #  the at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
@@ -171,7 +149,7 @@ class ProcessingEngine:
                     self.num_caps = 1
                     return
             else:  # The file did not load correctly
-            # TODO: Handle this case better
+                # TODO: Handle this case better
                 self.num_caps = 0
                 return
         # add all of the OpenCV captures to self.cap_dict:
@@ -207,7 +185,7 @@ class ProcessingEngine:
         :return: void
         """
         if update_heatmaps:
-            self.heatmap.reset(self.num_caps,self.cap_dict)
+            self.heatmap.reset(self.num_caps, self.cap_dict)
 
         # TODO: currently not used...
         for i in range(self.num_caps):
@@ -326,7 +304,7 @@ class ProcessingEngine:
             # template for the destination square (to be modified by rotation matrix)
             orig_square_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
             # apply the rotation matrix to the original square, translated to match the position of observed calibration square
-            square_dest =  orig_square_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
+            square_dest = orig_square_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
 
             # Visualization:
             if self.debug:
@@ -487,7 +465,7 @@ class ProcessingEngine:
             net = self.detect_dict[cap_num]  # select the image processor (net)
             blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
                                          swapRB=True, crop=False)  # pre=process the image for detection
-            net.setInput(blob) # run detection on the frame:
+            net.setInput(blob)  # run detection on the frame:
             layerOutputs = net.forward(self.ln)
             boxes, frame = self._parse_detected(frame, layerOutputs, cap_num)
 
@@ -503,7 +481,8 @@ class ProcessingEngine:
 
     def show_heatmap(self, cap_num):
         """
-        This is a parred-down version of get_frame() that is used just for the get_results page
+        This is a parred-down version of get_frame() that is used by the get_results page to display a heatmap on top
+        of the camera frame.
         :param cap_num: index of the camera desired
         :return: frame to be displayed
         """
@@ -515,6 +494,30 @@ class ProcessingEngine:
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
 
+class Stopwatch:
+    """
+    Stopwatch is utility class used by the calibrate() method of the ProcessingEngine class; acts as a stopwatch.
+    """
+
+    def __init__(self):
+        self.logged_time = time.time()
+        self.time_since_last_check = 0
+
+    def log_time(self):
+        """
+        Record the current time
+        """
+        self.logged_time = time.time()
+
+    def check_stopwatch(self):
+        """
+        Check the elapsed time between when this method is called and when the stopwatch time was last logged.
+        :return: self.time_since_last_check
+        """
+        self.time_since_last_check = time.time() - self.logged_time
+        return self.time_since_last_check
+
+
 if __name__ == "__main__":
     engine = ProcessingEngine(debug=True)
     engine.turn_on()
@@ -522,7 +525,7 @@ if __name__ == "__main__":
     # display each camera connected to the computer with a corrected perspective
     while True:
         for cap_num in range(engine.num_caps):
-            print ('here')
+            print('here')
             frame = engine.get_frame(cap_num, calibrate=False)
             cv2.imshow("frame {}".format(cap_num), frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
