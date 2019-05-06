@@ -1,18 +1,25 @@
 # The Floor is Lava - a computer vision utility for tracking pedestrian foot traffic
 
-### Install:
+### Setup:
+Clone the repository and enter the root directory of the project:
 ```
-pip install requirements
+git clone https://github.com/sd19spring/the_floor_is_lava.git; cd the_floor_is_lava
 ```
-Makes heavy use of:
+
+Make the setup script executable:
+```
+chmod +x setup.sh
+```
+Execute the setup script:
+```
+./setup.sh
+```
+This will install all of the dependencies for the project, including Python modules and the yolov3.weights file that is necessary for the person detection.
+
+Our project makes heavy use of the following modules:
 - Opencv
 - Flask
-
-You will need to install the following modules:
-- OpenCV-contrib
-- Flask
-- Flask_session
-- redis
+The rest of the dependencies are listed in requirements.txt. You may want to use a [virtual environment](https://realpython.com/python-virtual-environments-a-primer/) when running the setup script.
 
 ### Usage
 In the /source directory:
