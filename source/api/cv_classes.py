@@ -13,30 +13,52 @@ import time
 import datetime
 import os
 
-execution_path = os.getcwd()
-
 DETECTION_THRESHOLD = 0.6  # minimum confidence level for person to be recognized
 
 
 class Heatmap:
     """
-    This class stores, calculates, and renders the heatmaps generated from the object detection in ProcessingEngine
+    This class stores, calculates, and renders the heatmaps generated from the object detection in ProcessingEngine;
+    this class also stores previously recorded heatmaps during a given session.
+
+    Each heatmap is a matrix n x m dimensional matrix in the same size of the camera frame (n x m pixels) for which it
+    represents. To recognize the presence of a person in the heatmap is to take the bounding boxes detected around that
+    person, find the corresponding pixels in the heatmap matrix, and increment them each by 1. The units of the heatmap
+    matrices are therefore qualitatively interpreted as density of people observed in a given spot over a given period
+    of time.
     """
 
     def __init__(self):
         self.num_caps = 0  # number of captures (same as ProcessingEngine)
-
         self.all_heatmaps = {}  # dictionary to store heatmaps across multiple trials
         self.n = -1  # counter for which (sets of) heatmap(s) is currently being recorded to
-
         self.cap_size_dict = {}  # dictionary to store the resolution of the camera frames
+
+    def reset(self, num_caps, cap_dict):
+        """
+        Resets the heatmaps using previously stored information about the camera's width and height. It increments
+        self.n by 1 and adds the corresponding starter information to the dictionary at the new key self.n + 1.
+        :param num_caps: number of cameras connected to the computer
+        :cap_dict: dictionary of camera captures from ProcessingEngine
+        :return: void
+        """
+        self.n += 1
+
+        # [{dictionary to store the heatmaps for each camera}, starting time in seconds, ending time in seconds,
+        # duration, display starting time, display end time]
+        self.all_heatmaps[self.n] = [{}, datetime.datetime.now(), 0, '-', time.ctime(), '-']
+        for i in range(num_caps):
+            shape = cap_dict[i][4]  # extract the dimensions of the cameras
+            self.cap_size_dict[i] = (cap_dict[i][4][0], cap_dict[i][4][1])  # update the capture size dictionary
+            self.all_heatmaps[self.n][0][i] = np.zeros(shape)
 
     def add_to_heatmap(self, cap_num, box_points):
         """
-        Add the points enclosed by a bounding box to the heatmap
+        This method adds the points enclosed by a bounding box to the heatmap. The docstring at the beginning of this
+        class provides better context for how this works.
         :param cap_num: index of the camera
         :param box_points: bounding box points (top left x, top left y, bottom right x, bottom right y)
-        :return:
+        :return: void
         """
         self.all_heatmaps[self.n][0][cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
 
@@ -52,24 +74,13 @@ class Heatmap:
         heatmap_img = cv2.applyColorMap(h, cv2.COLORMAP_HOT)  # turn matrix into a heatmap
         return heatmap_img
 
-    def reset(self, num_caps, cap_dict):
+    def record_end_time(self):
         """
-        Resets the heatmaps using previously stored information about the camera's width and height
+        This function records the ending time of a particular recording, calculates the duration of the recording, and
+        stores the information accordingly.
         :return: void
         """
-        self.n += 1
-
-        # [{dictionary to store the heatmaps for each camera}, starting time in seconds, ending time in seconds,
-        # duration, display starting time, display end time]
-        self.all_heatmaps[self.n] = [{}, datetime.datetime.now(), 0, 0, time.ctime(), 0]
-        for i in range(num_caps):
-            shape = cap_dict[i][4]  # extract the dimensions of the cameras
-            self.cap_size_dict[i] = (cap_dict[i][4][0], cap_dict[i][4][1])  # update the capture size dictionary
-            self.all_heatmaps[self.n][0][i] = np.zeros(shape)
-
-    def record_end_time(self):
         self.all_heatmaps[self.n][2] = datetime.datetime.now()  # record ending time in seconds
-        print('#########################################################')
         delta = str(self.all_heatmaps[self.n][2] - self.all_heatmaps[self.n][1])  # compute duration of recording
         delta = delta[0:len(delta) - 7]  # round the time
         self.all_heatmaps[self.n][3] = delta
@@ -77,13 +88,11 @@ class Heatmap:
 
     def get_time_info(self):
         """
-        Returns the time information associated with recording n
+        Returns the time information associated with recording n.
         :param n: index of the recording to be returned. If n == -1, then use the most recent scan.
         :return: start time, end time, and duration (in one string)
         """
-
-        return "Start time: " + str(self.all_heatmaps[self.n][4]) + " End time: " \
-                                                                    "" + str(
+        return "Start time: " + str(self.all_heatmaps[self.n][4]) + " End time: " + str(
             self.all_heatmaps[self.n][5]) + " Duration: " + str(self.all_heatmaps[self.n][3])
 
 
@@ -102,8 +111,8 @@ class ProcessingEngine:
         # derive the paths to the YOLO weights and model configuration
         self.weightsPath = os.path.sep.join([cwd, 'api/yolo-coco', "yolov3.weights"])
         self.configPath = os.path.sep.join([cwd, 'api/yolo-coco', "yolov3.cfg"])
-
-        self.ln = 0
+        self.ln = 0  # a placeholder (for determining only the *output* layer names that we need from YOLO)
+        # that is overridden when self.turn_on() is called
 
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
@@ -124,7 +133,14 @@ class ProcessingEngine:
         self.heatmap = Heatmap()
 
     def turn_on(self, filename=''):
-        i = 0
+        """
+        This method loads all of the OpenCV camera captures into self.cap_dict and, and also loads all of the
+        objects used for detection and stores them in self.detect_dict. One of the main purposes of this function is
+        so that the camera(s) is/are not turned on until the select_feeds.html file is opened.
+        :param filename: path to the video file being uploaded if not using the live camera footage
+        :return:
+        """
+        i = 0  # counter used for indexing
         # If a filename is specified, do no camera feeds.
         if filename != '':
             cap = cv2.VideoCapture(filename)
@@ -152,35 +168,36 @@ class ProcessingEngine:
                 # TODO: Handle this case better
                 self.num_caps = 0
                 return
-        # add all of the OpenCV captures to self.cap_dict:
-        while i < 5:  # support up to 5 different cameras
-            cap = cv2.VideoCapture(i)
-            if cap.isOpened():
-                # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
-                # for the calibration matrix, 1, which is boolean for whether the camera is to be used, and (height,
-                # width) of the camera frame]
-                self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-                                                   int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
-                print("[INFO] loading YOLO from disk for camera {}...".format(i))
-                self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,
-                                                                 self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
-                print("[INFO] finished loading YOLO for camera {}...".format(i))
-                if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
-                    #  the at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
-                    # be initialized.
+        else:  # using live footage from the cameras connected to the computer
+            # add all of the OpenCV captures to self.cap_dict:
+            while i < 5:  # support up to 5 different cameras
+                cap = cv2.VideoCapture(i)
+                if cap.isOpened():
+                    # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
+                    # for the calibration matrix, 1, which is boolean for whether the camera is to be used, and (height,
+                    # width) of the camera frame]
+                    self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                                                       int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
+                    print("[INFO] loading YOLO from disk for camera {}...".format(i))
+                    self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,
+                                                                     self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
+                    print("[INFO] finished loading YOLO for camera {}...".format(i))
+                    if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
+                        #  the at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
+                        # be initialized.
 
-                    # determine only the *output* layer names that we need from YOLO
-                    self.ln = self.detect_dict[i].getLayerNames()
-                    self.ln = [self.ln[i[0] - 1] for i in self.detect_dict[i].getUnconnectedOutLayers()]
+                        # determine only the *output* layer names that we need from YOLO
+                        self.ln = self.detect_dict[i].getLayerNames()
+                        self.ln = [self.ln[i[0] - 1] for i in self.detect_dict[i].getUnconnectedOutLayers()]
 
-            else:  # all the cameras that can be detected have been, so break the loop:
-                self.num_caps = i
-                break
-            i += 1
+                else:  # all the cameras that can be detected have been, so break the loop:
+                    self.num_caps = i
+                    break
+                i += 1
 
     def turn_off(self, update_heatmaps=True, reset_detection=True):
         """
-        Releases all of the OpenCV captures and sets the
+        Releases all of the OpenCV captures and clears the appropriate attributes from the class.
         :param update_heatmaps: a boolean for whether the heatmaps should also be reset
         :return: void
         """
@@ -216,17 +233,26 @@ class ProcessingEngine:
         :param toggle: integer boolean (1 turns it on, 0 turns it off)
         :return: None
         """
-
         self.cap_dict[capNum][1] = toggle
         if toggle == 0:  # reset the calibration matrix if the perspective correction is being turned off
             self.cap_dict[capNum][2] = 0
         return None
 
     def start_recording(self):
+        """
+        Called by record_button_receiver() in app.py, this sets the recording parameter equal to True and resets the
+        heatmap data.
+        :return: void
+        """
         self.record = True
         self.heatmap.reset(self.num_caps, self.cap_dict)
 
     def stop_recording(self):
+        """
+        Called by record_button_receiver() in app.py, this sets the recording parameter equal to False and signals the
+        heatmap class to record the end time of the recording.
+        :return:
+        """
         self.record = False
         self.heatmap.record_end_time()
 
@@ -303,7 +329,8 @@ class ProcessingEngine:
             rotation_matrix = np.float32([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
             # template for the destination square (to be modified by rotation matrix)
             orig_square_pre = np.float32([[0, 0], [mbe, 0], [mbe, mbe], [0, mbe]])
-            # apply the rotation matrix to the original square, translated to match the position of observed calibration square
+            # apply the rotation matrix to the original square, translated to match the position of observed calibration
+            # square
             square_dest = orig_square_pre.dot(rotation_matrix) + np.float32([square[0][0], square[0][1]])
 
             # Visualization:
@@ -345,11 +372,14 @@ class ProcessingEngine:
 
             # take self.threshold frames to calibrate; if calibrated, flip the is_calibrated switch
             if self.n > self.threshold:
-                # find the average calibration matrix between the self.threshold frames
+                # find the average calibration matrix between the self.threshold frames by summing up all of the
+                # calibration matrices and performing elementwise division of the resulting matrix by the number of
+                # matrices that were added.
                 calibration_matrix = np.float32()
                 for i in range(self.threshold):  # self.matrix_list should be self.threshold long
                     calibration_matrix = calibration_matrix + self.matrix_list[i]
                 self.cap_dict[cap_num][2] = calibration_matrix / self.threshold
+
                 return frame
             else:
                 self.stopwatch.log_time()  # log the time
@@ -357,13 +387,16 @@ class ProcessingEngine:
 
     def _parse_detected(self, frame, layerOutputs, cap_num):
         """
+        This function takes the output of the object detection and parses the information down to bounding box
+        coordinates of any people that the algorithm detects.
         TODO: credit source for this code and add description in docstring
         :param frame: input frame to the object detection
         :param w: width of the frame
         :param h: height of the frame
         :param layerOutputs: output from the object detection
         :param LABELS: labels for the YOLO model
-        :return: boxes, frame_copy: bounding boxes for the detected people, a copy of the frame with bounding boxes drawn
+        :return: boxes, frame_copy: bounding boxes for the detected people, a copy of the frame with bounding boxes
+        drawn
         """
         boxes = []
         confidences = []
@@ -383,29 +416,25 @@ class ProcessingEngine:
 
                 confidence = scores[classID]
 
-                # filter out weak predictions by ensuring the detected
-                # probability is greater than the minimum probability
+                # filter out weak predictions by ensuring the detected probability is greater than the minimum
+                # probability
                 if confidence > DETECTION_THRESHOLD:
-                    # scale the bounding box coordinates back relative to the
-                    # size of the image, keeping in mind that YOLO actually
-                    # returns the center (x, y)-coordinates of the bounding
-                    # box followed by the boxes' width and height
+                    # scale the bounding box coordinates back relative to the size of the image, keeping in mind that
+                    # YOLO actually returns the center (x, y)-coordinates of the bounding box followed by the boxes'
+                    # width and height
                     box = detection[0:4] * np.array([W, H, W, H])
                     (centerX, centerY, width, height) = box.astype("int")
 
-                    # use the center (x, y)-coordinates to derive the top and
-                    # and left corner of the bounding box
+                    # use the center (x, y)-coordinates to derive the top and left corner of the bounding box
                     x = int(centerX - (width / 2))
                     y = int(centerY - (height / 2))
 
-                    # update our list of bounding box coordinates, confidences,
-                    # and class IDs
+                    # update our list of bounding box coordinates, confidences, and class IDs
                     boxes.append([x, y, int(width), int(height)])
                     confidences.append(float(confidence))
                     classIDs.append(classID)
 
-        # apply non-maxima suppression to suppress weak, overlapping bounding
-        # boxes
+        # apply non-maxima suppression to suppress weak, overlapping bounding boxes
         idxs = cv2.dnn.NMSBoxes(boxes, confidences, DETECTION_THRESHOLD, 0.3)
 
         # ensure at least one detection exists
@@ -420,6 +449,9 @@ class ProcessingEngine:
                     (x, y) = (boxes[i][0], boxes[i][1])
                     (w, h) = (boxes[i][2], boxes[i][3])
 
+                    # modify boxes such that it includes the top left and bottom right coordinates as opposed to the top
+                    # left coordinates and the length and width of the box - this helps for adding information to the
+                    # heatmap
                     boxes[i][2] = x + w
                     boxes[i][3] = y + h
 
@@ -427,8 +459,7 @@ class ProcessingEngine:
                     color = (157, 161, 100)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
                     text = "{}: {:.4f}".format(self.LABELS[classIDs[i]], confidences[i])
-                    cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-                                0.5, color, 2)
+                    cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         frame_copy = frame
         return boxes, frame_copy
 
@@ -441,18 +472,18 @@ class ProcessingEngine:
         """
         # if the camera is set to off, then dim the frame by x0.2
 
-        cap = self.cap_dict.get(cap_num)[0]  # select the camera
-        _, frame = cap.read()
+        cap = self.cap_dict.get(cap_num)[0]  # select the camera from self.cap_dict
+        _, frame = cap.read()  # read the camera capture
 
         # pull out the height and width of the camera frame
         height = self.cap_dict[cap_num][4][0]
         width = self.cap_dict[cap_num][4][1]
 
         if self.cap_dict[cap_num][3] == 0:  # if the camera is muted
-            frame = frame * 0.2
-            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+            frame = frame * 0.2  # dim the camera feed
+            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()  # perform no further computation
 
-        else:
+        else:  # if the camera is not muted:
             if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
                 if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
                     # becomes the calibration matrix, the truth value of a multi-element array is ambiguous
@@ -462,22 +493,25 @@ class ProcessingEngine:
                         frame = self.calibrate(cap_num, frame)
                         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
-            net = self.detect_dict[cap_num]  # select the image processor (net)
-            blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
-                                         swapRB=True, crop=False)  # pre=process the image for detection
-            net.setInput(blob)  # run detection on the frame:
-            layerOutputs = net.forward(self.ln)
-            boxes, frame = self._parse_detected(frame, layerOutputs, cap_num)
+            else:  # if the camera is not in calibration mode, perform the person detection
+                net = self.detect_dict[cap_num]  # select the image processor (net)
+                blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
+                                             swapRB=True, crop=False)  # pre=process the image for detection
 
-            # add bounding boxes to the heatmap
-            if self.record:
-                for i in range(len(boxes)):
-                    self.heatmap.add_to_heatmap(cap_num, boxes[i])
+                # run detection on the frame:
+                net.setInput(blob)
+                layerOutputs = net.forward(self.ln)
+                boxes, frame = self._parse_detected(frame, layerOutputs, cap_num)
 
-                heat_overlay = self.heatmap.return_heatmap(cap_num)
-                frame = cv2.addWeighted(frame, 0.4, heat_overlay, 0.6, 0)
+                # add bounding boxes to the heatmap if in recording mode
+                if self.record:
+                    for i in range(len(boxes)):
+                        self.heatmap.add_to_heatmap(cap_num, boxes[i])
 
-            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+                    heat_overlay = self.heatmap.return_heatmap(cap_num)
+                    frame = cv2.addWeighted(frame, 0.4, heat_overlay, 0.6, 0)
+
+                return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
     def show_heatmap(self, cap_num):
         """
@@ -490,7 +524,7 @@ class ProcessingEngine:
 
         cap = self.cap_dict.get(cap_num)[0]  # select the camera
         _, frame = cap.read()
-        frame = cv2.addWeighted(frame, 0.2, heat_overlay, 0.8, 0)
+        frame = cv2.addWeighted(frame, 0.2, heat_overlay, 0.8, 0)  # overaly the heatmap on to the frame
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
 
@@ -506,6 +540,7 @@ class Stopwatch:
     def log_time(self):
         """
         Record the current time
+        :return: void
         """
         self.logged_time = time.time()
 
