@@ -34,8 +34,21 @@
                    <input type = "submit"/>
                 </form>
                 <br>
-            <div onclick="changeSwitch('/record_button_receiver')" class="cover button" id="switch"><a>Create
-                Heatmap 🔨</a></div>
+            <div onclick="changeSwitch('/record_button_receiver')" class="cover button" id="switch">
+                <a>Create Heatmap 🔨</a>
+            </div>
+            <div id="recordingInfo">Hello</div>
+            <script>
+                // This script updates the recording information in the above div
+                setInterval(function() { update_values() }, 1000);
+                function update_values() {
+                    $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+                    $.getJSON($SCRIPT_ROOT+"/send_recording_info",
+                        function(data) {
+                           document.getElementById('recordingInfo').innerText=data.text;
+                        });
+                }
+            </script>
             <br>
             <a style="visibility: hidden" href="/results" class="cover button" id="result">See Results ➡</a>
         </div>

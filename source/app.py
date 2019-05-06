@@ -2,7 +2,7 @@
 Web application app
 """
 
-from flask import render_template, Response, request
+from flask import render_template, Response, request, jsonify
 from web_classes import WebApplication
 from cv_classes import ProcessingEngine
 
@@ -27,8 +27,13 @@ def record_button_receiver():
 
 
 def send_recording_info():
-    Response("Stats for recording num. {}".format(engine.heatmap.n) + engine.heatmap.get_time_info(-1),
-             mimetype='text/plain')
+    text = "Stats for recording num. {}".format(engine.heatmap.n) + engine.heatmap.get_time_info()
+    return jsonify(text=text)
+
+
+# def yield_recording_info():
+#     while True:
+#         yield ("Stats for recording num. {}".format(engine.heatmap.n) + engine.heatmap.get_time_info())
 
 
 def cap_switch():
@@ -179,7 +184,7 @@ if __name__ == "__main__":
         '/results': results,
         '/all_cam_switch': all_cam_switch,
         '/send_recording_info': send_recording_info,
-        '/uploader':upload_file})})
+        '/uploader':upload_file})
 
     # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)
