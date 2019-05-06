@@ -28,13 +28,11 @@ def record_button_receiver():
 
 
 def send_recording_info():
-    text = "Stats for recording num. {}".format(engine.heatmap.n) + engine.heatmap.get_time_info()
+    if engine.heatmap.n == -1:
+        text="No recordings yet. Statistics about your recordings will show up here."
+    else:
+        text = "Recording {}: ".format(engine.heatmap.n) + engine.heatmap.get_time_info()
     return jsonify(text=text)
-
-
-# def yield_recording_info():
-#     while True:
-#         yield ("Stats for recording num. {}".format(engine.heatmap.n) + engine.heatmap.get_time_info())
 
 
 def cap_switch():
