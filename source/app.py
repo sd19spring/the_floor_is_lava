@@ -3,8 +3,9 @@ Web application app
 """
 
 from flask import render_template, Response, request, jsonify
-from web_classes import WebApplication
-from cv_classes import ProcessingEngine
+from api.web_classes import WebApplication
+from api.cv_classes import ProcessingEngine
+import webbrowser
 
 
 def record_button_receiver():
@@ -188,5 +189,6 @@ if __name__ == "__main__":
         '/send_recording_info': send_recording_info,
         '/uploader':upload_file})
 
+    webbrowser.open('http://127.0.0.1:8080/')
     # Beginning listening on `localhost`, port 8080
     app.listen(port=8080)
