@@ -17,8 +17,9 @@ Execute the setup script:
 This will install all of the dependencies for the project, including Python modules and the yolov3.weights file that is necessary for the person detection.
 
 Our project makes heavy use of the following modules:
-- Opencv
+- OpenCV (opencv-python and opencv-contrib-python)
 - Flask
+
 The rest of the dependencies are listed in requirements.txt. You may want to use a [virtual environment](https://realpython.com/python-virtual-environments-a-primer/) when running the setup script.
 
 ### Usage
