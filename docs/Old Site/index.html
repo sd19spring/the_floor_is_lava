@@ -1,0 +1,58 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+
+  <title>The Floor Is Lava</title>
+  <meta name="description" content="The Floor is Lava is a software package
+  for recognizing shoppers from video feed and constructing a visualization
+  of the flow within a retail store setting.">
+  <meta name="author" content="Michael Remley & Nick Bourdon">
+  <link rel="stylesheet" type="text/css" href="styles_v2.css">
+  <style>
+
+  </style>
+</head>
+
+<body>
+
+<header>The Floor Is Lava
+  <nav>
+  <a class='nav' href="./index.html">Home</a><span>|</span>
+  <a class='nav' href="./instructions.html">How To Run</a><span>|</span>
+  <a class='nav' href="./implementation.html">Implementation</a><span>|</span>
+  <a class='nav' href="./impactstatement.html">Impact Statement</a>
+  </nav>
+</header>
+
+<main>
+<h1>What Does This Project Do?</h1>
+
+<p>We set out to create a software package that takes retail store video as
+  input and produces useful information about the foot traffic and flow as
+  output.<br></br><br>
+  <span style="display:flex;justify-content:center;">
+  <img src="./images/NY_ppl_normal.jpg" alt="Image of people in store" width="35%"
+  style='vertical-align:middle;height:20%;border:solid black'>
+  <img src="./images/long-arrow-right.png" alt="Right arrow" width="10%"
+  style='vertical-align:middle;height:20%;margin: auto 2rem;'>
+  <img src="./images/NY_ppl_normal.jpg" alt="Image of people in store" width="35%"
+  style='vertical-align:middle;height:20%;border:solid black'>
+  </span>
+  <br><i>For an image, we start with the left input and produce the right output.</i>
+  <p> The name "The Floor is Lava" comes from the visual effect of the heatmap that makes it appear that the floor is lava.
+</p>
+<h1>Project Evolution</h1>
+<p>From the start, we knew what project we wanted to do, and we talked about which skills each of us could bring to the table. Feeling that we could pull this off, all four of us began researching computer vision, image processing, and the ethics of our project idea. Issues were brought to our attention that led us to shy away from methods, such as facial recognition, that produced personally identifiable information from the images.</p>
+<p>After the first architectural review, we began to experiment with all the methods we had uncovered and tested their ability to meet our needs. We picked a single method and Duncan and Gabriella began to iterate on it to meet our needs. Meanwhile, Nick collected sample footage from the Untitled Fashion Show, and Michael began to put together the project website you see here. Now that we were writing code that would become part of the final project, documentation became an important focus.</p>
+<p>After the second architectural review, we began the process of integrating the separate pieces of our project into a single cohesive unit. At the same time, we were documenting both the software and the project's story. Having a function minimum viable product (MVP) and enough supporting documents for others to understand our work were our goals for the final stretch.</p>
+
+<h1>Results</h1>
+
+<p>Using footage from the Weissman Foundry Fashion Show, we created a heat map outlining where individuals clustered around the most.There are two visuals, the video immediately below shows object tracking & heat mapping. <br><br> The video below shows the object tracking script able to successfully track and follow people along the catwalk. Additionally, the script shows how far it can detect individuals as well as its limiations with picking out people in a crowd. The number indicates the percent confindence such as .78 or .99.
+<center><br><iframe style="padding:1px;border:1px solid black;" src="https://www.youtube.com/embed/VupkATc3i90" frameborder="1" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen width="560" height="315" align=middle></iframe></br></center>
+</p>
+
+</main>
+</body>
+</html>

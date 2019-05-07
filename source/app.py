@@ -31,7 +31,7 @@ def send_recording_info():
     if engine.heatmap.n == -1:
         text="No recordings yet. Statistics about your recordings will show up here."
     else:
-        text = "Recording {}: ".format(engine.heatmap.n) + engine.heatmap.get_time_info()
+        text = "Recording {}: ".format(engine.heatmap.n + 1) + engine.heatmap.get_time_info()
     return jsonify(text=text)
 
 
@@ -68,6 +68,23 @@ def calib_switch():
     # to indicate no calibration, but the engine class understands the opposite
 
     engine.calib_toggle(capNum, toggle)
+    # return 'none' and not None because Flask doesn't like it when None is returned.
+    return 'none'
+
+
+def increment_heatmap_display():
+    """
+    Used for switching between which heatmap is shown in the results page.
+    :return: void
+    """
+    increment = request.get_data().decode()
+    if increment == 'up':
+        if not engine.n_heatmap >= engine.heatmap.n:
+            engine.n_heatmap += 1
+    else:
+        if not engine.n_heatmap == 0:
+            engine.n_heatmap -= 1
+
     # return 'none' and not None because Flask doesn't like it when None is returned.
     return 'none'
 
@@ -185,7 +202,8 @@ if __name__ == "__main__":
         '/results': results,
         '/all_cam_switch': all_cam_switch,
         '/send_recording_info': send_recording_info,
-        '/uploader':upload_file})
+        '/uploader':upload_file,
+        '/increment_heatmap_display': increment_heatmap_display})
 
     webbrowser.open('http://127.0.0.1:8080/')
     # Beginning listening on `localhost`, port 8080
