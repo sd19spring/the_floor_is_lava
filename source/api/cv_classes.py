@@ -62,13 +62,15 @@ class Heatmap:
         """
         self.all_heatmaps[self.n][0][cap_num][box_points[1]:box_points[3], box_points[0]:box_points[2]] += 1
 
-    def return_heatmap(self, cap_num):
+    def return_heatmap(self, cap_num, n=-2):
         """
         Returns a matrix that will be interpreted by OpenCV and therefore the user as a heatmap
         :param cap_num:  index of the camera
         :return heatmap_img: a numpy.ndarray that is an image representing the heatmap
         """
-        h = self.all_heatmaps[self.n][0][cap_num]  # retrieve the raw heatmap values
+        if n == -2:  # -2 is used to indicate the default selection
+            n = self.n
+        h = self.all_heatmaps[n][0][cap_num]  # retrieve the raw heatmap values
         h = np.interp(h, (0, h.max()), (0, 255))  # rescale the heatmap to 0:255 values
         h = h.astype(np.uint8)  # convert data type for applyColorMap
         heatmap_img = cv2.applyColorMap(h, cv2.COLORMAP_HOT)  # turn matrix into a heatmap
@@ -131,6 +133,8 @@ class ProcessingEngine:
 
         self.cap_num_dict = {1: (320, 320), 2: (128, 128), 3: (96, 96)}
         self.heatmap = Heatmap()
+
+        self.n_heatmap = 0
 
     def turn_on(self, filename=''):
         """
@@ -475,6 +479,9 @@ class ProcessingEngine:
         cap = self.cap_dict.get(cap_num)[0]  # select the camera from self.cap_dict
         _, frame = cap.read()  # read the camera capture
 
+        self.n_heatmap = self.heatmap.n  # reset the variable that selects the heatmap to the current one as defined by
+        # self.heatmap.n
+
         # pull out the height and width of the camera frame
         height = self.cap_dict[cap_num][4][0]
         width = self.cap_dict[cap_num][4][1]
@@ -520,7 +527,7 @@ class ProcessingEngine:
         :param cap_num: index of the camera desired
         :return: frame to be displayed
         """
-        heat_overlay = self.heatmap.return_heatmap(cap_num)
+        heat_overlay = self.heatmap.return_heatmap(cap_num, self.n_heatmap)  # selects the heatmap of interest
 
         cap = self.cap_dict.get(cap_num)[0]  # select the camera
         _, frame = cap.read()

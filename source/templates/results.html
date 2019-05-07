@@ -27,9 +27,33 @@
                 Each camera's generated heatmap is shown below. If the code was able to compile one heatmap by stitching
                 each individual one together, that will be shown too.
             </p>
-            <a href="/select_feeds"><div class="cover button" style="width: 100%">Start Over ↩️</div></a>
+            <a href="/select_feeds">
+                <div class="cover button" style="width: 100%">Record again ↩️</div>
+            </a>
             <br>
             <a class="cover button_small" href="/">Return to Home 🏠️</a>
+            <br><br>
+            <div class="lightgray_box">
+                <div id="recordingInfo"></div>
+                <script>
+                    // This script updates the recording information in the above div
+                    setInterval(function () {
+                        update_values()
+                    }, 1000);
+                </script>
+                <div style="padding: 1rem; margin: auto; width: 100%" class="row">
+                    <div class="align-left cover button" style="margin: auto; width: 40%"
+                         onclick="incrementHeatmapDisplayDown()">
+                        <a>Previous</a>
+                    </div>
+                    <div class="align-right cover button" style="margin: auto; width: 40%"
+                         onclick="incrementHeatmapDisplayUp()">
+                        <a>Next</a>
+                    </div>
+                </div>
+            </div>
+            <br>
+
         </div>
     </div>
     <footer class="mastfoot mt-auto">
@@ -45,8 +69,8 @@
         </div>
     </footer>
 </section>
-    <script>
-        createDivs({{ NUM_CAPS }})
-    </script>
+<script>
+    createDivs({{ NUM_CAPS }})
+</script>
 </body>
 </html>
