@@ -46,7 +46,7 @@
                 <div id="recordingInfo"></div>
                 <script>
                     // This script updates the recording information in the above div
-                    setInterval(function() { update_values() }, 1000);
+                    setInterval(function() { update_values() }, 200);
                     function update_values() {
                         $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
                         $.getJSON($SCRIPT_ROOT+"/send_recording_info",
