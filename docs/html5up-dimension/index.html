@@ -120,7 +120,9 @@
                 file app.py in the source directory.
             </p>
             <pre class="prettyprint" style="padding: 1rem; font-size: small">
-git clone https://github.com/sd19spring/the_floor_is_lava.git; cd the_floor_is_lava
+git clone
+https://github.com/sd19spring/the_floor_is_lava.git;
+cd the_floor_is_lava
 chmod +x setup.sh
 ./setup.sh
 cd source/
@@ -129,12 +131,63 @@ python app.py</pre>
                 are connected to your computer before you open the web app.
             </p>
             <h2>How to use:</h2>
-            <li>Insert instructions here
-            </li>
-            <br><img align=middle src="images/web_app_welcome.png" alt=""/></span></br>
+            <pre class="prettyprint" style="padding-right:10px; font-size: 1">
+# The Floor is Lava - a computer vision utility for tracking
+pedestrian foot traffic
 
-            <br><img align=middle src="images/web_app_landing.png" height="250" width="400" alt=""/></span></br>
-            <br>
+### Setup:
+Clone the repository and enter the root directory of the project:
+```
+git clone https://github.com/sd19spring/the_floor_is_lava.git;
+cd the_floor_is_lava
+```
+
+Make the setup script executable:
+```
+chmod +x setup.sh
+```
+Execute the setup script:
+```
+./setup.sh
+```
+This will install all of the dependencies for the project,
+including Python modules and the yolov3.weights file that is
+ necessary for the person detection.
+
+Our project makes heavy use of the following modules:
+- OpenCV (opencv-python and opencv-contrib-python)
+- Flask
+
+The rest of the dependencies are listed in requirements.txt.
+You may want to use a [virtual environment]
+(https://realpython.com/python-virtual-environments-a-primer/)
+when running the setup script.
+
+### Usage
+In the /source directory:
+```
+python app.py
+```
+A web app will open up and walk you through the rest!
+
+### Features:
+Gain a better understanding of your retail store by
+visualizing how people move through your store.
+- Easy to use web app
+- Handles multiple cameras, and can even stitch them together
+- Robust tracking using a machine learning object detection algorithm
+
+### Examples:
+*tbd*
+
+### Authors
+* Gabriella Bourdon
+* Michael Remley
+* Nick Bourdon
+* Duncan Mazza
+
+            </pre>
+
         </article>
 
         <!-- About -->
@@ -264,9 +317,9 @@ else:
             <ol>
                 <li><a href="https://pjreddie.com/darknet/yolo/">YOLO</a></li>
                 <li><a href="https://opencv.org/">OpenCV</a></li>
-                <li></li>
-                <li></li>
-                <li></li>
+                <li><a href="http://flask.pocoo.org/">Flask</a></li>
+                <li><a href="https://realpython.com/python-virtual-environments-a-primer/">Virtual environments Used</a></li>
+                <li><a href="https://html5up.net/">HTML5Up</a></li>
 
             </ol>
             </p>
