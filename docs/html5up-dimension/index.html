@@ -34,9 +34,10 @@
                     <br>low inventory turnovers,
                     <br>or nonstrategic product placement,
                     <br>then click through below!
+                    <br><b> Watch Me!</b>
+                  <br><iframe width="560" height="315" src="https://www.youtube.com/embed/qDOVPIkkUTs" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-                    <br> <b>Watch Me!!</b><br><br>
-                    <img src="images/pic03.jpg" height="200" width=200></img>
+
                 </p>
             </div>
         </div>
@@ -101,9 +102,10 @@
                     frameborder="1" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen width="560" height="315" align=middle></iframe>
             </br></center>
-            <br><br>
+            <br>
             Using this tracking video, we were then able to create a heat map feature utilizing the web app, and will
-            appear below.
+            appear below.<br>
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/rRn8gJ8Miv8" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </article>
 
 
@@ -139,11 +141,15 @@ python app.py</pre>
         <article id="about">
             <h2 class="major">About</h2>
             <p>
-                So, you may be wondering, how does the code work? Let's start with our uml diagram:
+                So, you may be wondering, how does the code work? Let's start with our architecture diagram:
             </p>
             <img align=middle src="images/diagram.png" height="400" width="400" alt=""/></span></br>
-            <p> There are important classes that were integrated including a Heatmap, Stopwatch, ProcessingEngine that
-                were created in order to frame it all together. See below.</p>
+            <p> There are important classes that were integrated and critical to the script functioning.
+            Below is a dense function called "get_frame" where its role is to process everything being sent to the web app. This
+          includes how to dim the camera, resize the camera feeds, capacity to mute camera feeds. <br><br>
+            The function's role is also to track, measure, and create the heatmap being displayed on the screen as well as storing that information.
+            As you can see, this function is essentially the conductor of all of the variables moving throughout the script & organizing it on the web app.
+          </p>
             <pre class="prettyprint" style="padding: 1rem; font-size: x-small">
 def get_frame(self, cap_num, calibrate=False):
 """
