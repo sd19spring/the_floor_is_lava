@@ -88,14 +88,14 @@ class Heatmap:
         self.all_heatmaps[self.n][3] = delta
         self.all_heatmaps[self.n][5] = time.ctime()
 
-    def get_time_info(self):
+    def get_time_info(self, n):
         """
         Returns the time information associated with recording n.
-        :param n: index of the recording to be returned. If n == -1, then use the most recent scan.
+        :param n: index of the recording to be returned.
         :return: start time, end time, and duration (in one string)
         """
-        return "Start time: " + str(self.all_heatmaps[self.n][4]) + " End time: " + str(
-            self.all_heatmaps[self.n][5]) + " Duration: " + str(self.all_heatmaps[self.n][3])
+        return "Start time: " + str(self.all_heatmaps[n][4]) + " End time: " + str(
+            self.all_heatmaps[n][5]) + " Duration: " + str(self.all_heatmaps[n][3])
 
 
 class ProcessingEngine:
@@ -393,7 +393,11 @@ class ProcessingEngine:
         """
         This function takes the output of the object detection and parses the information down to bounding box
         coordinates of any people that the algorithm detects.
-        TODO: credit source for this code and add description in docstring
+
+        This method was derived from the example at this link:
+        https://www.pyimagesearch.com/2018/11/12/yolo-object-detection-with-opencv/
+        credit to: Adrian Rosebrock
+
         :param frame: input frame to the object detection
         :param w: width of the frame
         :param h: height of the frame
@@ -480,7 +484,6 @@ class ProcessingEngine:
         _, frame = cap.read()  # read the camera capture
 
         self.n_heatmap = self.heatmap.n  # reset the variable that selects the heatmap to the current one as defined by
-        # self.heatmap.n
 
         # pull out the height and width of the camera frame
         height = self.cap_dict[cap_num][4][0]
