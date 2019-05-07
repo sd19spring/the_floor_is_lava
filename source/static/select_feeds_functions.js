@@ -62,6 +62,7 @@ function muteCam(capNum) {
 }
 
 function calibCam(capNum) {
+    // Triggers the calibration process for a particular camera. capNum selects which camera is being calibrated.
     if (calibDict[capNum] === 1) {
         // turn initialize
         $.post("/calib_switch", {capNum: capNum, record: 0}, changeButtonCam(capNum, calibDict[capNum], 'Revert',

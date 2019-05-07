@@ -18,21 +18,15 @@ function createDivs(numCaps) {
 }
 
 function incrementHeatmapDisplayDown() {
-
+    // Change the heatmap being displayed by increasing the index of the heatmap indexed by 1
     $.post("/increment_heatmap_display", 'down');
     // stop link reloading the page
     event.preventDefault();
 }
 
 function incrementHeatmapDisplayUp() {
+    // Change the heatmap being displayed by decreasing the index of the heatmap indexed by 1
     $.post("/increment_heatmap_display", 'up');
-    // stop link reloading the page
-    event.preventDefault();
-}
-
-function turnOffCameras() {
-    // ajax the JSON to the server
-    $.post('/all_cam_switch', {0: 0});
     // stop link reloading the page
     event.preventDefault();
 }

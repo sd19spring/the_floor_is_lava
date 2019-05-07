@@ -35,7 +35,10 @@
                     <br>or nonstrategic product placement,
                     <br>then click through below!
                     <br><b> Watch Me!</b>
-                  <br><iframe width="560" height="315" src="https://www.youtube.com/embed/qDOVPIkkUTs" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <br>
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/qDOVPIkkUTs" frameborder="0"
+                            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
 
 
                 </p>
@@ -105,7 +108,9 @@
             <br>
             Using this tracking video, we were then able to create a heat map feature utilizing the web app, and will
             appear below.<br>
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/rRn8gJ8Miv8" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/rRn8gJ8Miv8" frameborder="0"
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
         </article>
 
 
@@ -126,14 +131,26 @@ chmod +x setup.sh
 cd source/
 python app.py</pre>
             <p>If you are using live footage from cameras connected to your computer, make sure that the cameras
-                are connected to your computer before you open the web app.
+                are connected to your computer before you open the web app. When running app.py, the web app will
+                automatically launch in the browser!
             </p>
             <h2>How to use:</h2>
-            <li>Insert instructions here
+            <p>After running the setup code and launching the app, the web app will walk you through the rest.</p>
+            <li>Click "Mute" to not record on a specific camera</li>
+            <li>Click "Calibrate" to perform perspective correction. The web app includes the resources needed to
+                utilize this feature; the purpose of the perspective correction is to make the camera view orthognal to
+                the
+                surface you are trying to track regardless of the orientation of the camera. Check out an example
+                <a href="https://drive.google.com/file/d/1AXY0fFUas0T9cdxYsAFAwrmk60ltqTNl/view?usp=sharing">here.</a>
             </li>
-            <br><img align=middle src="images/web_app_welcome.png" alt=""/></span></br>
-
-            <br><img align=middle src="images/web_app_landing.png" height="250" width="400" alt=""/></span></br>
+            <li>Click the start recording button to make a heatmap. After you are done recording, you can view your
+                previous recordings. Don't worry, each one is saved, and you can view the results of previous
+                recordings!
+            </li>
+            <img align=middle src="images/snap_of_app.png" alt="screenshot of app" style="width: 80%"/></span></br>
+            <li>The details for each recording are shown to the right, so you can obtain greater context about the data.
+            </li>
+            <li>You can alternatively uplaod a video file for analysis if you would prefer not to use live cameras.</li>
             <br>
         </article>
 
@@ -145,11 +162,14 @@ python app.py</pre>
             </p>
             <img align=middle src="images/diagram.png" height="400" width="400" alt=""/></span></br>
             <p> There are important classes that were integrated and critical to the script functioning.
-            Below is a dense function called "get_frame" where its role is to process everything being sent to the web app. This
-          includes how to dim the camera, resize the camera feeds, capacity to mute camera feeds. <br><br>
-            The function's role is also to track, measure, and create the heatmap being displayed on the screen as well as storing that information.
-            As you can see, this function is essentially the conductor of all of the variables moving throughout the script & organizing it on the web app.
-          </p>
+                Below is a dense function called "get_frame" where its role is to process everything being sent to the
+                web app. This
+                includes how to dim the camera, resize the camera feeds, capacity to mute camera feeds. <br><br>
+                The function's role is also to track, measure, and create the heatmap being displayed on the screen as
+                well as storing that information.
+                As you can see, this function is essentially the conductor of all of all information related to
+                displaying the camera feeds & organizing it on the web app.
+            </p>
             <pre class="prettyprint" style="padding: 1rem; font-size: x-small">
 def get_frame(self, cap_num, calibrate=False):
 """
@@ -176,19 +196,7 @@ if self.cap_dict[cap_num][3] == 0:
     ('.jpg', frame)[1].tobytes()
 
 else:
-  if self.cap_dict[cap_num][1] == 1 or calibrate == True:
-# if the camera is in calibration mode:
-      if type(self.cap_dict[cap_num][2]) != int:
-# already calibrated if true; compare type because when it
-# becomes the calibration matrix, the truth value
-    of a multi-element array is ambiguous
-  frame = cv2.warpPerspective(frame,self.cap_dict[cap_num][2], (height, width))
-      else:
-# perform calibration
-          while self.cap_dict[cap_num][2] == 0:
-# not yet calibrated
-              frame = self.calibrate(cap_num)
-              return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+  ### removed some code here for brevity
 
   net = self.detect_dict[cap_num]
     # select the image processor (net)
@@ -209,8 +217,19 @@ else:
           self.heatmap.add_to_heatmap(cap_num, boxes[i])
 
   return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
-                                </pre>
-
+</pre>
+            <p>This code functions by accessing each camera recognized by OpenCV, performing all computation on it, and
+                then returning the image in a byte format so that it can be sent to the web app. app.py is the file that
+                calls this method, and is what posts the information to the web server that the web app then retrieves.
+                This method also interfaces with the Heatmap class, which stores and renders the information from the image
+                processing as a heatmap.
+                <br>
+                The app.py file is another critical component of our web app. In addition to rendering all of the web
+                pages, it also parses all information sent from the web app (such as whether to start recording the
+                heatmap or not), and sends that information to the ProcessingEngine class (whcih the above method is
+                part of) so that changes can be made accordingly. There is also some javascript behind the scenes that
+                enables this sending of information, as well as rendering an arbitrary number of cameras.
+            </p>
         </article>
 
         <!-- Contact -->
