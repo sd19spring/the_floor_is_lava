@@ -1,58 +1,536 @@
-<!doctype html>
-
-<html lang="en">
+<!DOCTYPE HTML>
+<!--
+	Dimension by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
 <head>
-
-  <title>The Floor Is Lava</title>
-  <meta name="description" content="The Floor is Lava is a software package
-  for recognizing shoppers from video feed and constructing a visualization
-  of the flow within a retail store setting.">
-  <meta name="author" content="Michael Remley & Nick Bourdon">
-  <link rel="stylesheet" type="text/css" href="styles_v2.css">
-  <style>
-
-  </style>
+    <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=ruby&amp;skin=desert"></script>
+    <title>Dimension by HTML5 UP</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <link rel="stylesheet" href="assets/css/main.css"/>
+    <noscript>
+        <link rel="stylesheet" href="assets/css/noscript.css"/>
+    </noscript>
 </head>
+<body class="is-preload">
 
-<body>
+<!-- Wrapper -->
+<div id="wrapper">
 
-<header>The Floor Is Lava
-  <nav>
-  <a class='nav' href="./index.html">Home</a><span>|</span>
-  <a class='nav' href="./instructions.html">How To Run</a><span>|</span>
-  <a class='nav' href="./implementation.html">Implementation</a><span>|</span>
-  <a class='nav' href="./impactstatement.html">Impact Statement</a>
-  </nav>
-</header>
+    <!-- Header -->
+    <header id="header">
+        <div class="logo">
+            <span class="icon fa-fire"></span>
+        </div>
+        <div class="content">
+            <div class="inner">
+                <h1>The Floor Is Lava!</h1>
+                <p><b>The Perfect Foot Traffic Heat Mapping Utility</b><br><br>
+                    If you have ever struggled with:
+                    <br>inefficient retial layouts,
+                    <br>low inventory turnovers,
+                    <br>or nonstrategic product placement,
+                    <br>then click through below!
 
-<main>
-<h1>What Does This Project Do?</h1>
+                    <br> <b>Watch Me!!</b><br><br>
+                    <img src="images/pic03.jpg" height="200" width=200></img>
+                </p>
+            </div>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#intro"><b>Introduction</b></a></li>
+                <li><a href="#work"><b>README PLS</b></a></li>
+                <li><a href="#about"><b>About</b></a></li>
+                <li><a href="#contact"><b>Impact Statement</b></a></li>
+                <!--<li><a href="#elements">Elements</a></li>-->
+            </ul>
+        </nav>
+    </header>
 
-<p>We set out to create a software package that takes retail store video as
-  input and produces useful information about the foot traffic and flow as
-  output.<br></br><br>
-  <span style="display:flex;justify-content:center;">
-  <img src="./images/NY_ppl_normal.jpg" alt="Image of people in store" width="35%"
-  style='vertical-align:middle;height:20%;border:solid black'>
-  <img src="./images/long-arrow-right.png" alt="Right arrow" width="10%"
-  style='vertical-align:middle;height:20%;margin: auto 2rem;'>
-  <img src="./images/NY_ppl_normal.jpg" alt="Image of people in store" width="35%"
-  style='vertical-align:middle;height:20%;border:solid black'>
-  </span>
-  <br><i>For an image, we start with the left input and produce the right output.</i>
-  <p> The name "The Floor is Lava" comes from the visual effect of the heatmap that makes it appear that the floor is lava.
-</p>
-<h1>Project Evolution</h1>
-<p>From the start, we knew what project we wanted to do, and we talked about which skills each of us could bring to the table. Feeling that we could pull this off, all four of us began researching computer vision, image processing, and the ethics of our project idea. Issues were brought to our attention that led us to shy away from methods, such as facial recognition, that produced personally identifiable information from the images.</p>
-<p>After the first architectural review, we began to experiment with all the methods we had uncovered and tested their ability to meet our needs. We picked a single method and Duncan and Gabriella began to iterate on it to meet our needs. Meanwhile, Nick collected sample footage from the Untitled Fashion Show, and Michael began to put together the project website you see here. Now that we were writing code that would become part of the final project, documentation became an important focus.</p>
-<p>After the second architectural review, we began the process of integrating the separate pieces of our project into a single cohesive unit. At the same time, we were documenting both the software and the project's story. Having a function minimum viable product (MVP) and enough supporting documents for others to understand our work were our goals for the final stretch.</p>
+    <!-- Main -->
+    <div id="main">
 
-<h1>Results</h1>
+        <!-- Intro -->
+        <article id="intro">
+            <h2 class="major">Intro</h2>
+            <span class="image main"><img src="images/Store-Layout.png" alt=""/></span>
+            <p>Looking at the image, we can see how an average retail store layout currently exists. Retailers are busy
+                engaging with clients and having excellent customer service that it becomes a challenge and a cost to
+                hire another employee to track customer foot traffic. You may have have had first-hand experience from
+                this symptom as a customer struggling to find your product. </p>
+            <p>To help these retailers, we set out to create a software package that takes retail store video as input
+                and produces useful information about the foot traffic and flow as output. Using this solution will help
+                retailers maximize its revenue per square foot and be able to track visibility of its product
+                promotions.</p>
+            <p>Why "The Floor Is Lava": The name "The Floor is Lava" comes from the visual effect of the heatmap that
+                makes it appear that the floor is lava.</p>
+            <br>
+            <h2>Project Evolution</h2>
+            <p>From the start, we knew what project we wanted to do, and we talked about which skills each of us could
+                bring to the table. Feeling that we could pull this off, all four of us began researching computer
+                vision, image processing, and the ethics of our project idea. Issues were brought to our attention that
+                led us to shy away from methods, such as facial recognition, that produced personally identifiable
+                information from the images.
+                <br><br>After the first architectural review, we began to experiment with all the methods we had
+                uncovered and tested their ability to meet our needs. We picked a single method and Duncan and Gabriella
+                began to iterate on it to meet our needs. Meanwhile, Nick collected sample footage from the Untitled
+                Fashion Show, and Michael began to put together the project website you see here. Now that we were
+                writing code that would become part of the final project, documentation became an important focus.<br>
+                <br>After the second architectural review, we began the process of integrating the separate pieces of
+                our project into a single cohesive unit.
+                At the same time, we were documenting both the software and the project's story. Having a function
+                minimum viable product (MVP) and enough supporting documents for others to understand our work were our
+                goals for the final stretch.</p>
+            <p>The video below is a demonstration of how the camera stream is recorded via web app and then displays a
+                primitive heat map from where the object was; this will succeed with any footage stream.</p>
+            <span class="image main"><video controls="controls" width="250" height="500" name="Video Name"
+                                            src=images/demo.mov></video></span>
+            <h2>Results</h2>
+            <p>Using footage from the Weissman Foundry Fashion Show, we created a heat map outlining where individuals
+                clustered around the most.There are two visuals, the video immediately below shows object tracking &
+                heat mapping.
+                <br><br>
+                The video below shows the object tracking script able to successfully track and follow people along the
+                catwalk. Additionally, the script shows how far it can detect individuals as well as its limiations with
+                picking out people in a crowd. The number indicates the percent confindence such as .78 or .99.</p>
+            <iframe style="padding:1px;border:1px solid black;" src="https://www.youtube.com/embed/VupkATc3i90"
+                    frameborder="1" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen width="560" height="315" align=middle></iframe>
+            </br></center>
+            <br><br>
+            Using this tracking video, we were then able to create a heat map feature utilizing the web app, and will
+            appear below.
+        </article>
 
-<p>Using footage from the Weissman Foundry Fashion Show, we created a heat map outlining where individuals clustered around the most.There are two visuals, the video immediately below shows object tracking & heat mapping. <br><br> The video below shows the object tracking script able to successfully track and follow people along the catwalk. Additionally, the script shows how far it can detect individuals as well as its limiations with picking out people in a crowd. The number indicates the percent confindence such as .78 or .99.
-<center><br><iframe style="padding:1px;border:1px solid black;" src="https://www.youtube.com/embed/VupkATc3i90" frameborder="1" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen width="560" height="315" align=middle></iframe></br></center>
-</p>
 
-</main>
+        <!-- Work -->
+        <article id="work">
+            <h2 class="major">How To Use</h2>
+            <span class="image main"><img src="images/lava.gif" height="200" width="50" alt=""/></span>
+            <p>
+                So, you may be wondering, how does the code work? Let's start with how to run our
+                app. Download our project from <a href="https://github.com/sd19spring/the_floor_is_lava">Github</a>,
+                and run the setup script that is in the root directory. Then, execute the python
+                file app.py in the source directory.
+            </p>
+            <pre class="prettyprint" style="padding: 1rem; font-size: small">
+git clone https://github.com/sd19spring/the_floor_is_lava.git; cd the_floor_is_lava
+chmod +x setup.sh
+./setup.sh
+cd source/
+python app.py</pre>
+            <p>If you are using live footage from cameras connected to your computer, make sure that the cameras
+                are connected to your computer before you open the web app.
+            </p>
+            <h2>How to use:</h2>
+            <li>Insert instructions here
+            </li>
+            <br><img align=middle src="images/web_app_welcome.png" alt=""/></span></br>
+
+            <br><img align=middle src="images/web_app_landing.png" height="250" width="400" alt=""/></span></br>
+            <br>
+        </article>
+
+        <!-- About -->
+        <article id="about">
+            <h2 class="major">About</h2>
+            <p>
+                So, you may be wondering, how does the code work? Let's start with our uml diagram:
+            </p>
+            <img align=middle src="images/diagram.png" height="400" width="400" alt=""/></span></br>
+            <p> There are important classes that were integrated including a Heatmap, Stopwatch, ProcessingEngine that
+                were created in order to frame it all together. See below.</p>
+            <pre class="prettyprint" style="padding: 1rem; font-size: x-small">
+def get_frame(self, cap_num, calibrate=False):
+"""
+Returns the captured frame that is warped by
+the calibration_matrix
+:param: cap_num - index number of the OpenCV capture
+:param: calibrate - boolean for whether the frame should
+be perspective corrected
+:return: frame or frame converted to bytes, depending on use case
+"""
+# if the camera is set to off, then dim the frame by x0.2
+
+cap = self.cap_dict.get(cap_num)[0]  # select the camera
+_, frame = cap.read()
+
+# pull out the height and width of the camera frame
+height = self.cap_dict[cap_num][4][0]
+width = self.cap_dict[cap_num][4][1]
+
+if self.cap_dict[cap_num][3] == 0:
+# if the camera is muted
+  frame = frame * 0.2
+  return frame if self.debug else cv2.imencode
+    ('.jpg', frame)[1].tobytes()
+
+else:
+  if self.cap_dict[cap_num][1] == 1 or calibrate == True:
+# if the camera is in calibration mode:
+      if type(self.cap_dict[cap_num][2]) != int:
+# already calibrated if true; compare type because when it
+# becomes the calibration matrix, the truth value
+    of a multi-element array is ambiguous
+  frame = cv2.warpPerspective(frame,self.cap_dict[cap_num][2], (height, width))
+      else:
+# perform calibration
+          while self.cap_dict[cap_num][2] == 0:
+# not yet calibrated
+              frame = self.calibrate(cap_num)
+              return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+
+  net = self.detect_dict[cap_num]
+    # select the image processor (net)
+  blob = cv2.dnn.blobFromImage(frame, 1 / 255.0,
+    self.cap_num_dict[self.num_caps],
+  swapRB=True, crop=False)
+# pre=process the image for detection
+  net.setInput(blob)
+# run detection on the frame:
+  layerOutputs = net.forward(self.ln)
+  boxes, frame = parse_detected(frame,
+    height, width, layerOutputs, self.LABELS)
+
+# add bounding boxes to the heatmap
+  if self.record:
+      for i in range(len(boxes)):
+          print('cv_classes: ', cap_num)
+          self.heatmap.add_to_heatmap(cap_num, boxes[i])
+
+  return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+                                </pre>
+
+        </article>
+
+        <!-- Contact -->
+        <article id="contact">
+            <h2>Impact Statement</h2>
+            <p><b>Introduction</b><br>
+                We have created software with one clear intent: to provide information to retail shop owners about how
+                shoppers move around inside their stores so that they may arrange their store to facilitate the flow of
+                traffic and place products in profitable locations within the store. While this vision is not meant to
+                cause harm to any of the stakeholders involved, we recognize that this software could be applied to
+                different context or have additional consequences we did not foresee. This page serves as our
+                recognition of the potential ethical problems surrounding our software and describes how we expect it to
+                be used.</p>
+            <p><b>Ethics of Video Recording</b><br>
+                We feel that it is unethical to record someone without their consent; however, it is lawful in many U.S.
+                states to record without consent.
+                That said, the footage collected for this project is video that would have existed regardless of the use
+                of our
+                product because most stores have a security system that records the store. Recording for security
+                purposes is common knowledge,
+                thanks in part to signs like this:
+                <br><br>
+                <img src="images/smile_on_camera.jpg" height="250" width="400" alt=""><br><br>
+                Given that people are generally aware of being recorded, we propose that signage be posted informing
+                them of how security footage is further used in stores that use our product. This informs them that they
+                are being recorded and to what extent that footage is used beyond what they already know. In this
+                fashion,
+                we feel we have sufficiently mitigated the ethical risks of using recorded footage of people whose
+                consent is only implied.</p>
+
+            <p><b>Ethics of Recognition</b><br>
+                First and foremost, our software does not intend to identify people or create personally identifiable
+                information. Second, recognition softwares have historically encountered problems with diversity and
+                inclusion because they were published before their limitations were fully understood. As it stands now,
+                our software carries all the limitations of the recognition dataset from which it was trained, and we
+                have not yet characterized its ability to accurately recognize people who have darker skin, are
+                wheelchair bound, or otherwise different in physical appearance to a camera. <br>We plan to gather this
+                information to prevent blind trust in our algorithm, but also recognize that our software may not have a
+                wide enough impact for these limitations to become significant.
+                <b> Just in case,this software has not been shown to inclusively recognize people with all physical
+                    appearances</b> and any application must recognize this limitation.</p>
+            <p><b>Conclusion</b><br>
+                To summarize, we foresee risks relating to recording shoppers and recognizing people of all kinds in the
+                application of our software.
+                We recognize that there may be other consequences that we have not foreseen, but do not expect our
+                software to be so widely applied that these miscomings cause widespread harm.
+
+
+            <h2>Attribution & Credits </h2>
+            <p>
+            <ol>
+                <li><a href="https://pjreddie.com/darknet/yolo/">YOLO</a></li>
+                <li><a href="https://opencv.org/">OpenCV</a></li>
+                <li></li>
+                <li></li>
+                <li></li>
+
+            </ol>
+            </p>
+        </article>
+        <!-- Elements -->
+        <article id="elements">
+            <h2 class="major">Elements</h2>
+
+            <section>
+                <h3 class="major">Text</h3>
+                <p>This is <b>bold</b> and this is <strong>strong</strong>. This is <i>italic</i> and this is <em>emphasized</em>.
+                    This is <sup>superscript</sup> text and this is <sub>subscript</sub> text.
+                    This is <u>underlined</u> and this is code: <code>for (;;) { ... }</code>. Finally, <a href="#">this
+                        is a link</a>.</p>
+                <hr/>
+                <h2>Heading Level 2</h2>
+                <h3>Heading Level 3</h3>
+                <h4>Heading Level 4</h4>
+                <h5>Heading Level 5</h5>
+                <h6>Heading Level 6</h6>
+                <hr/>
+                <h4>Blockquote</h4>
+                <blockquote>Fringilla nisl. Donec accumsan interdum nisi, quis tincidunt felis sagittis eget tempus
+                    euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis
+                    volutpat ac adipiscing accumsan faucibus. Vestibulum ante ipsum primis in faucibus lorem ipsum dolor
+                    sit amet nullam adipiscing eu felis.
+                </blockquote>
+                <h4>Preformatted</h4>
+                <pre><code>i = 0;
+
+while (!deck.isInOrder()) {
+    print 'Iteration ' + i;
+    deck.shuffle();
+    i++;
+}
+
+print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
+            </section>
+
+            <section>
+                <h3 class="major">Lists</h3>
+
+                <h4>Unordered</h4>
+                <ul>
+                    <li>Dolor pulvinar etiam.</li>
+                    <li>Sagittis adipiscing.</li>
+                    <li>Felis enim feugiat.</li>
+                </ul>
+
+                <h4>Alternate</h4>
+                <ul class="alt">
+                    <li>Dolor pulvinar etiam.</li>
+                    <li>Sagittis adipiscing.</li>
+                    <li>Felis enim feugiat.</li>
+                </ul>
+
+                <h4>Ordered</h4>
+                <ol>
+                    <li>Dolor pulvinar etiam.</li>
+                    <li>Etiam vel felis viverra.</li>
+                    <li>Felis enim feugiat.</li>
+                    <li>Dolor pulvinar etiam.</li>
+                    <li>Etiam vel felis lorem.</li>
+                    <li>Felis enim et feugiat.</li>
+                </ol>
+                <h4>Icons</h4>
+                <ul class="icons">
+                    <li><a href="#" class="icon fa-twitter"><span class="label">Twitter</span></a></li>
+                    <li><a href="#" class="icon fa-facebook"><span class="label">Facebook</span></a></li>
+                    <li><a href="#" class="icon fa-instagram"><span class="label">Instagram</span></a></li>
+                    <li><a href="#" class="icon fa-github"><span class="label">Github</span></a></li>
+                </ul>
+
+                <h4>Actions</h4>
+                <ul class="actions">
+                    <li><a href="#" class="button primary">Default</a></li>
+                    <li><a href="#" class="button">Default</a></li>
+                </ul>
+                <ul class="actions stacked">
+                    <li><a href="#" class="button primary">Default</a></li>
+                    <li><a href="#" class="button">Default</a></li>
+                </ul>
+            </section>
+
+            <section>
+                <h3 class="major">Table</h3>
+                <h4>Default</h4>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Price</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>Item One</td>
+                            <td>Ante turpis integer aliquet porttitor.</td>
+                            <td>29.99</td>
+                        </tr>
+                        <tr>
+                            <td>Item Two</td>
+                            <td>Vis ac commodo adipiscing arcu aliquet.</td>
+                            <td>19.99</td>
+                        </tr>
+                        <tr>
+                            <td>Item Three</td>
+                            <td> Morbi faucibus arcu accumsan lorem.</td>
+                            <td>29.99</td>
+                        </tr>
+                        <tr>
+                            <td>Item Four</td>
+                            <td>Vitae integer tempus condimentum.</td>
+                            <td>19.99</td>
+                        </tr>
+                        <tr>
+                            <td>Item Five</td>
+                            <td>Ante turpis integer aliquet porttitor.</td>
+                            <td>29.99</td>
+                        </tr>
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <td colspan="2"></td>
+                            <td>100.00</td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <h4>Alternate</h4>
+                <div class="table-wrapper">
+                    <table class="alt">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Price</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>Item One</td>
+                            <td>Ante turpis integer aliquet porttitor.</td>
+                            <td>29.99</td>
+                        </tr>
+                        <tr>
+                            <td>Item Two</td>
+                            <td>Vis ac commodo adipiscing arcu aliquet.</td>
+                            <td>19.99</td>
+                        </tr>
+                        <tr>
+                            <td>Item Three</td>
+                            <td> Morbi faucibus arcu accumsan lorem.</td>
+                            <td>29.99</td>
+                        </tr>
+                        <tr>
+                            <td>Item Four</td>
+                            <td>Vitae integer tempus condimentum.</td>
+                            <td>19.99</td>
+                        </tr>
+                        <tr>
+                            <td>Item Five</td>
+                            <td>Ante turpis integer aliquet porttitor.</td>
+                            <td>29.99</td>
+                        </tr>
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <td colspan="2"></td>
+                            <td>100.00</td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="major">Buttons</h3>
+                <ul class="actions">
+                    <li><a href="#" class="button primary">Primary</a></li>
+                    <li><a href="#" class="button">Default</a></li>
+                </ul>
+                <ul class="actions">
+                    <li><a href="#" class="button">Default</a></li>
+                    <li><a href="#" class="button small">Small</a></li>
+                </ul>
+                <ul class="actions">
+                    <li><a href="#" class="button primary icon fa-download">Icon</a></li>
+                    <li><a href="#" class="button icon fa-download">Icon</a></li>
+                </ul>
+                <ul class="actions">
+                    <li><span class="button primary disabled">Disabled</span></li>
+                    <li><span class="button disabled">Disabled</span></li>
+                </ul>
+            </section>
+
+            <section>
+                <h3 class="major">Form</h3>
+                <form method="post" action="#">
+                    <div class="fields">
+                        <div class="field half">
+                            <label for="demo-name">Name</label>
+                            <input type="text" name="demo-name" id="demo-name" value="" placeholder="Jane Doe"/>
+                        </div>
+                        <div class="field half">
+                            <label for="demo-email">Email</label>
+                            <input type="email" name="demo-email" id="demo-email" value=""
+                                   placeholder="jane@untitled.tld"/>
+                        </div>
+                        <div class="field">
+                            <label for="demo-category">Category</label>
+                            <select name="demo-category" id="demo-category">
+                                <option value="">-</option>
+                                <option value="1">Manufacturing</option>
+                                <option value="1">Shipping</option>
+                                <option value="1">Administration</option>
+                                <option value="1">Human Resources</option>
+                            </select>
+                        </div>
+                        <div class="field half">
+                            <input type="radio" id="demo-priority-low" name="demo-priority" checked>
+                            <label for="demo-priority-low">Low</label>
+                        </div>
+                        <div class="field half">
+                            <input type="radio" id="demo-priority-high" name="demo-priority">
+                            <label for="demo-priority-high">High</label>
+                        </div>
+                        <div class="field half">
+                            <input type="checkbox" id="demo-copy" name="demo-copy">
+                            <label for="demo-copy">Email me a copy</label>
+                        </div>
+                        <div class="field half">
+                            <input type="checkbox" id="demo-human" name="demo-human" checked>
+                            <label for="demo-human">Not a robot</label>
+                        </div>
+                        <div class="field">
+                            <label for="demo-message">Message</label>
+                            <textarea name="demo-message" id="demo-message" placeholder="Enter your message"
+                                      rows="6"></textarea>
+                        </div>
+                    </div>
+                    <ul class="actions">
+                        <li><input type="submit" value="Send Message" class="primary"/></li>
+                        <li><input type="reset" value="Reset"/></li>
+                    </ul>
+                </form>
+            </section>
+
+        </article>
+
+    </div>
+    <!-- Footer -->
+    <footer id="footer">
+        <p class="copyright">&copy; The Floor is Lava. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
+    </footer>
+
+</div>
+
+<!-- BG -->
+<div id="bg"></div>
+
+<!-- Scripts -->
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/browser.min.js"></script>
+<script src="assets/js/breakpoints.min.js"></script>
+<script src="assets/js/util.js"></script>
+<script src="assets/js/main.js"></script>
+
 </body>
 </html>
