@@ -36,7 +36,7 @@ Gain a better understanding of your retail store by visualizing how people move 
 - Robust tracking using a machine learning object detection algorithm
 
 ### Examples:
-See our [website](sd19spring.github.io)
+See our [website](sd19spring.github.io/the_floor_is_lava/)
 
 ### Authors
 * Gabriella Bourdon
