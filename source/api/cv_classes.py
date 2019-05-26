@@ -288,9 +288,6 @@ class ProcessingEngine:
         # visualize the process of the calibration process: n frames calibrated / self.threshold needed
         cv2.rectangle(frame, (0, frame_y - 30), (int(self.n * frame_x / self.threshold), frame_y), (157, 161, 100), -1)
 
-        ################################################################################################################
-        # TODO: update so that there is only one aruco marker needed
-
         if len_markers == 0:  # look for one marker
             cv2.putText(frame, "A full calibration sheet isn't visible.", (frame_x_c - int(frame_x / 10), frame_y - 15),
                         cv2.FONT_HERSHEY_COMPLEX, 0.6, (255, 255, 255), 2)
@@ -310,8 +307,6 @@ class ProcessingEngine:
             square = []  # an ordered list that contains the coordinates of the square outlined by the ARUCO markers
             for i in range(4):
                 square.append(tuple(markers[0][0][i]))
-
-            ############################################################################################################
 
             # The following section of code Infers what the calibration square would look like if it was orthogonal to
             # the camera. This is set later as the destination square: square_dest. The destination square is used for
