@@ -91,8 +91,8 @@ class Heatmap:
         :param n: index of the recording to be returned.
         :return: start time, end time, and duration (in one string)
         """
-        return "Start time: " + str(self.all_heatmaps[n][4]) + " End time: " + str(
-            self.all_heatmaps[n][5]) + " Duration: " + str(self.all_heatmaps[n][3])
+        return "Start time: " + str(self.all_heatmaps[n][4]) + "\nEnd time: " + str(
+            self.all_heatmaps[n][5]) + "\nDuration: " + str(self.all_heatmaps[n][3])
 
 
 class ProcessingEngine:
@@ -453,10 +453,12 @@ class ProcessingEngine:
                     boxes[i][3] = y + h
 
                     # draw a bounding box rectangle and label on the image
-                    color = (157, 161, 100)
+                    # color = (157, 161, 100) # uncomment to use the turquoise color
+                    color = (200, 200, 200)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-                    text = "{}: {:.4f}".format(self.LABELS[classIDs[i]], confidences[i])
-                    cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    # uncomment the following two lines to add a label and confidence level to the bounding box
+                    # text = "{}: {:.4f}".format(self.LABELS[classIDs[i]], confidences[i])
+                    # cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         frame_copy = frame
         return boxes, frame_copy
 

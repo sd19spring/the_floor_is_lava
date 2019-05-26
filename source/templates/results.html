@@ -16,6 +16,7 @@
 
 <body class="text-center">
 <section class="container d-flex p-3 mx-auto flex-column">
+    <a class="cover button_small arrow" href="/select_feeds">⬅️ Hub</a>
     <div class="row">
         <div class="align-left" style="width: 60%; align-content: center">
             <div id="childElement"></div>
@@ -23,13 +24,12 @@
         <div class="align-center" style="width: 10%"></div>
         <div class="align-left" style="width: 30%; padding-top: 1rem">
             <h1 style="font-weight: bold; font-size: 2rem">Here are the heatmaps!</h1>
-            <p class="fa-paragraph" style="text-align: left">
-                Each camera's generated heatmap is shown below.<br>
-                Key: The whiter/brighter the color of the heatmap, the higher the values in the heatmap. The darker/
-                redder values of the heatmap, the lower the values recorded. Higher values correspond to a greater
-                density of detected people over time in that particular physical location, and lower values correspond
-                to a lower density of detected people.
-            </p>
+                <p class="fa-paragraph" style="text-align: left">
+                    Key: The whiter/brighter the color of the heatmap, the higher the values in the heatmap. The darker/
+                    redder values of the heatmap, the lower the values recorded. Higher values correspond to a greater
+                    density of detected people over time in that particular ph Each camera's generated heatmap is shown
+                    below.<br>
+                </p>
             <a href="/select_feeds">
                 <div class="cover button" style="width: 100%">Record again ↩️</div>
             </a>
@@ -40,12 +40,15 @@
                 <div id="recordingInfo"></div>
                 <script>
                     // This script updates the recording information in the above div
-                    setInterval(function() { update_values() }, 200);
+                    setInterval(function () {
+                        update_values()
+                    }, 200);
+
                     function update_values() {
                         $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-                        $.getJSON($SCRIPT_ROOT+"/send_recording_info",
-                            function(data) {
-                               document.getElementById('recordingInfo').innerText=data.text;
+                        $.getJSON($SCRIPT_ROOT + "/send_recording_info",
+                            function (data) {
+                                document.getElementById('recordingInfo').innerText = data.text;
                             });
                     }
                 </script>

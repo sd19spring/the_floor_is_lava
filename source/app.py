@@ -31,7 +31,7 @@ def send_recording_info():
     if engine.heatmap.n == -1:
         text="No recordings yet. Statistics about your recordings will show up here."
     else:
-        text = "Recording {}: ".format(engine.n_heatmap + 1) + engine.heatmap.get_time_info(engine.n_heatmap)
+        text = "Recording #{}\n ".format(engine.n_heatmap + 1) + engine.heatmap.get_time_info(engine.n_heatmap)
     return jsonify(text=text)
 
 

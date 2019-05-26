@@ -12,7 +12,7 @@ function createDivs(numCaps) {
         frame.innerHTML = "<img alt='[loading camera...]' src=" + eye_str + " class='capture'/>" +
             "<div class='row'><div onclick='muteCam(" + i + ")' id='capToggle" + i + "' " +
             "class='cover button_small forty' " + ">Mute</div>" + "<div class='cover button_small forty' " +
-            "id='calibrateToggle" + i + "' onclick='calibCam(" + i + ")'>Calibrate</div></div>";
+            "id='calibrateToggle" + i + "' onclick='calibCam(" + i + ")'>Perspective Correct</div></div>";
         // Get a reference to the element, before we want to insert the element
         var sp2 = document.getElementById("childElement");
         // Get a reference to the parent element

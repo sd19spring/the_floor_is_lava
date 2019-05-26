@@ -15,7 +15,9 @@
 </head>
 
 <body class="text-center">
+
 <section class="container d-flex p-3 mx-auto flex-column">
+    <a class="cover button_small arrow" href="/">⬅️ Home</a>
     <div class="row">
         <div class="align-left" style="width: 60%; align-content: center">
             <div id="childElement"></div>
@@ -24,8 +26,8 @@
         <div class="align-left" style="width: 30%; padding-top: 1rem">
             <h1 style="font-weight: bold; font-size: 2rem">Welcome to the hub</h1>
             <p class="fa-paragraph" style="text-align: left">See every camera connected to your computer. Choose which
-                ones to ignore or keep for analysis. Click "perspective correct" for cameras that are pointed at an
-                angle.</p>
+                ones to ignore or keep for analysis by clicking the mute button. Click "perspective correct" for
+                cameras that are pointed at an angle.</p>
 
             <div class="lightgray_box">
                 <p class="fa-paragraph" style="text-align: left">Alternatively, you can select a file to upload here:</p>
@@ -34,7 +36,7 @@
                    enctype = "multipart/form-data">
                     <div><input type = "file" name = "file" class="cover button_small"/></div>
                     <div style="height: 0.5rem;"></div>
-                   <div><input type = "submit"  class="cover button_small"/></div>
+                   <div><input type = "submit" class="cover button_small"/></div>
                 </form>
             </div>
             <br>
@@ -56,7 +58,7 @@
                     }
                 </script>
                 <br>
-                <a style="visibility: hidden" href="/results" class="cover button" id="result">See previous recordings➡</a>
+                <a style="visibility: hidden" href="/results" class="cover button" id="result">See previous recordings ➡</a>
                 <br>
             </div>
         </div>
