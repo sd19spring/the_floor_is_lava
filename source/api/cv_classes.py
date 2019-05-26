@@ -1,8 +1,5 @@
 """
 Contains all the classes used for computer vision and backend processing.
-
-@author: Duncan Mazza
-@revision: v1.3
 """
 
 import cv2
@@ -119,7 +116,7 @@ class ProcessingEngine:
         self.n = 0  # counter for the calibration process
         self.stopwatch = Stopwatch()
         self.threshold = threshold  # minimum number of frames used to perform calibration
-        self.matrix_list = []  # used to store matrices during calibration
+        self.matrix_dict = {}  # used to store matrices during calibration
         # initialize parameters for ARUCO detection (used for perspective correction)
         self.aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
         self.parameters = aruco.DetectorParameters_create()
@@ -155,6 +152,7 @@ class ProcessingEngine:
                 print(type(self.cap_dict))
                 self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
                                                    int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
+                self.matrix_dict[i] = []
                 print("[INFO] loading YOLO from disk for file {}...".format(filename))
                 self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,
                                                                  self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
@@ -272,6 +270,7 @@ class ProcessingEngine:
 
         :return: frame or frame converted to bytes, depending on use case
         """
+
         frame_x = self.cap_dict[cap_num][4][1]  # number of pixels wide the camera frame is
         frame_y = self.cap_dict[cap_num][4][0]  # number of pixels tall the camera frame is
         frame_x_c = int(frame_x / 2)  # center of the camera frame in the x direction
@@ -279,45 +278,40 @@ class ProcessingEngine:
         # detect the ARUCO markers
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         markers, ids, _ = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
+        len_markers = len(markers)
 
         if self.stopwatch.check_stopwatch() > 2:
             self.n = 0  # reset the counter if it has been too long; counter is used for ensuring enough frames have
-            #             been captured for the average matrix to be calculated
-            self.matrix_list = []  # reset the matrix_list if this is the case
+                        # been captured for the average matrix to be calculated
+            self.matrix_dict[cap_num] = []  # reset the matrix_list if this is the case
 
         # visualize the process of the calibration process: n frames calibrated / self.threshold needed
-        cv2.rectangle(frame, (0, frame_y - 30), (int(self.n * frame_x / self.threshold), frame_y), (157, 161, 100),
-                      -1)
+        cv2.rectangle(frame, (0, frame_y - 30), (int(self.n * frame_x / self.threshold), frame_y), (157, 161, 100), -1)
 
-        if len(markers) < 4:  # look for one marker sheet
+        ################################################################################################################
+        # TODO: update so that there is only one aruco marker needed
+
+        if len_markers == 0:  # look for one marker
             cv2.putText(frame, "A full calibration sheet isn't visible.", (frame_x_c - int(frame_x / 10), frame_y - 15),
-                        cv2.FONT_HERSHEY_COMPLEX, 0.6, (255, 255, 255), 2)  # apply the text
+                        cv2.FONT_HERSHEY_COMPLEX, 0.6, (255, 255, 255), 2)
             return frame
 
-        elif len(markers) > 4:  # handle the edge case where multiple calibration sheets are in frame
-
-            cv2.putText(frame, "Whoa that's too many markers! Please only use one calibration sheet at a time.",
-                        (frame_x_c - int(frame_x / 6), frame_y - 15), cv2.FONT_HERSHEY_COMPLEX, 0.6,
-                        (255, 255, 255), 2)  # apply the text
-
+        elif len_markers > 1:  # handle the edge case where multiple calibration markers are in frame
+            cv2.putText(frame, "That's too many markers! Please only use one calibration sheet at a time.",
+                        (frame_x_c - int(frame_x / 6), frame_y - 15), cv2.FONT_HERSHEY_COMPLEX, 0.6, (255, 255, 255), 2)
             return frame
 
-        else:  # one calibration sheet has been detected
+        else:  # one calibration marker has been detected
             self.n += 1  # update the counter
 
-            # make a dictionary of the markers so that they can be accessed by their id (detection returns them in a
-            # random order)
-            markers_dict = {}
-            for i in range(4):
-                markers_dict[ids[i][0]] = markers[i][0]
-
             # To calculate the required perspective shift, we will need to find how exactly the calibration square
-            # skewed. The coordinates of this square as found from a grid of 4 ARUCO markers arranged in a square shape
-            # are defined here.
+            # skewed by looking at the shape of the square aruco marker from the perspective of the camera. The
+            # coordinates of this square as found from the 4 corners of the aruco marker
             square = []  # an ordered list that contains the coordinates of the square outlined by the ARUCO markers
             for i in range(4):
-                marker = markers_dict[i]
-                square.append(tuple(marker[i]))
+                square.append(tuple(markers[0][0][i]))
+
+            ############################################################################################################
 
             # The following section of code Infers what the calibration square would look like if it was orthogonal to
             # the camera. This is set later as the destination square: square_dest. The destination square is used for
@@ -342,10 +336,10 @@ class ProcessingEngine:
                 # colors that will be used to test whether the order of the stored data is correct
                 colors = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
 
-                # When in debug mode, the box and its corners will be shown and colorcoded in this order:
+                # When in debug mode, the box and its corners will be shown and color-coded in this order:
                 # 1) Top-left (Blue)  2) Top-right (Green)  3) Bottom-right (Red)  4) Bottom left (Cyan)
                 for i in range(4):
-                    marker = markers_dict[i]
+                    marker = markers[0][0]
                     # print(markers)
                     if self.debug:
                         for j in range(4):
@@ -371,17 +365,17 @@ class ProcessingEngine:
                         cv2.line(frame, square[i], square[0], (157, 161, 100), 3)
 
             matrix = cv2.getPerspectiveTransform(np.float32(square), square_dest)  # get the transformation matrix
-            self.matrix_list.append(matrix)  # record the transformation matrix for this frame
+            self.matrix_dict[cap_num].append(matrix)  # record the transformation matrix for this frame
             frame = cv2.warpPerspective(frame, matrix, (frame_x, frame_y))  # apply the transformation matrix
 
-            # take self.threshold frames to calibrate; if calibrated, flip the is_calibrated switch
+            # take self.threshold frames to calibrate
             if self.n > self.threshold:
                 # find the average calibration matrix between the self.threshold frames by summing up all of the
                 # calibration matrices and performing elementwise division of the resulting matrix by the number of
                 # matrices that were added.
                 calibration_matrix = np.float32()
-                for i in range(self.threshold):  # self.matrix_list should be self.threshold long
-                    calibration_matrix = calibration_matrix + self.matrix_list[i]
+                for i in range(self.threshold):  # self.matrix_dict[cap_num] should be self.threshold long
+                    calibration_matrix = calibration_matrix + self.matrix_dict[cap_num][i]
                 self.cap_dict[cap_num][2] = calibration_matrix / self.threshold
 
                 return frame
@@ -497,31 +491,30 @@ class ProcessingEngine:
             if self.cap_dict[cap_num][1] == 1 or calibrate == True:  # if the camera is in calibration mode:
                 if type(self.cap_dict[cap_num][2]) != int:  # already calibrated if true; compare type because when it
                     # becomes the calibration matrix, the truth value of a multi-element array is ambiguous
-                    frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (height, width))
+                    frame = cv2.warpPerspective(frame, self.cap_dict[cap_num][2], (width, height))
                 else:  # perform calibration
-                    while self.cap_dict[cap_num][2] == 0:  # not yet calibrated
-                        frame = self.calibrate(cap_num, frame)
-                        return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+                    frame = self.calibrate(cap_num, frame)
+                    return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
-            else:  # if the camera is not in calibration mode, perform the person detection
-                net = self.detect_dict[cap_num]  # select the image processor (net)
-                blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
-                                             swapRB=True, crop=False)  # pre=process the image for detection
+            # Perform the person detection
+            net = self.detect_dict[cap_num]  # select the image processor (net)
+            blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, self.cap_num_dict[self.num_caps],
+                                         swapRB=True, crop=False)  # pre=process the image for detection
 
-                # run detection on the frame:
-                net.setInput(blob)
-                layerOutputs = net.forward(self.ln)
-                boxes, frame = self._parse_detected(frame, layerOutputs, cap_num)
+            # run detection on the frame:
+            net.setInput(blob)
+            layerOutputs = net.forward(self.ln)
+            boxes, frame = self._parse_detected(frame, layerOutputs, cap_num)
 
-                # add bounding boxes to the heatmap if in recording mode
-                if self.record:
-                    for i in range(len(boxes)):
-                        self.heatmap.add_to_heatmap(cap_num, boxes[i])
+            # add bounding boxes to the heatmap if in recording mode
+            if self.record:
+                for i in range(len(boxes)):
+                    self.heatmap.add_to_heatmap(cap_num, boxes[i])
 
-                    heat_overlay = self.heatmap.return_heatmap(cap_num)
-                    frame = cv2.addWeighted(frame, 0.4, heat_overlay, 0.6, 0)
+                heat_overlay = self.heatmap.return_heatmap(cap_num)
+                frame = cv2.addWeighted(frame, 0.4, heat_overlay, 0.6, 0)
 
-                return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
+            return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
     def show_heatmap(self, cap_num):
         """
@@ -534,7 +527,7 @@ class ProcessingEngine:
 
         cap = self.cap_dict.get(cap_num)[0]  # select the camera
         _, frame = cap.read()
-        frame = cv2.addWeighted(frame, 0.2, heat_overlay, 0.8, 0)  # overaly the heatmap on to the frame
+        frame = cv2.addWeighted(frame, 0.2, heat_overlay, 0.8, 0)  # overlay the heatmap on to the frame
         return frame if self.debug else cv2.imencode('.jpg', frame)[1].tobytes()
 
 
