@@ -10,20 +10,6 @@ Engineering in the spring of 2019.
 from flask import Flask
 import os
 from flask_session import Session
-# from redis import Redis, ConnectionError
-
-
-# def launch_redis():
-#     """
-#     Launches the redis server
-#     :return: rs - Redis object
-#     """
-#     rs = Redis('localhost')
-#     try:
-#         rs.ping()
-#         return rs
-#     except ConnectionError:
-#         return False
 
 
 class WebApplication(Flask):
