@@ -11,6 +11,7 @@
     <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
     <script src="{{ url_for('static', filename='select_feeds_functions.js') }}"></script>
+    <script src="{{ url_for('static', filename='reset_function.js') }}"></script>
 
 </head>
 
@@ -30,13 +31,14 @@
                 cameras that are pointed at an angle.</p>
 
             <div class="lightgray_box">
-                <p class="fa-paragraph" style="text-align: left">Alternatively, you can select a file to upload here:</p>
+                <p class="fa-paragraph" style="text-align: left">Alternatively, you can select a file to upload
+                    here:</p>
 
-                <form action = "http://localhost:8080/uploader" method = "POST"
-                   enctype = "multipart/form-data">
-                    <div><input type = "file" name = "file" class="cover button_small"/></div>
+                <form action="http://localhost:8080/uploader" method="POST"
+                      enctype="multipart/form-data">
+                    <div><input type="file" name="file" class="cover button_small"/></div>
                     <div style="height: 0.5rem;"></div>
-                   <div><input type = "submit" class="cover button_small"/></div>
+                    <div><input type="submit" class="cover button_small"/></div>
                 </form>
             </div>
             <br>
@@ -48,18 +50,26 @@
                 <div id="recordingInfo"></div>
                 <script>
                     // This script updates the recording information in the above div
-                    setInterval(function() { update_values() }, 200);
+                    setInterval(function () {
+                        update_values()
+                    }, 200);
+
                     function update_values() {
                         $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-                        $.getJSON($SCRIPT_ROOT+"/send_recording_info",
-                            function(data) {
-                               document.getElementById('recordingInfo').innerText=data.text;
+                        $.getJSON($SCRIPT_ROOT + "/send_recording_info",
+                            function (data) {
+                                document.getElementById('recordingInfo').innerText = data.text;
                             });
                     }
                 </script>
                 <br>
-                <a style="visibility: hidden" href="/results" class="cover button" id="result">See previous recordings ➡</a>
+                <a style="visibility: hidden" href="/results" class="cover button" id="result">See previous recordings
+                    ➡</a>
                 <br>
+            </div>
+            <br>
+            <div onclick="reset_all('true')" class="cover button_red_small">
+                <a>Refresh & Delete Data</a>
             </div>
         </div>
     </div>
@@ -71,13 +81,13 @@
                     3.49 0 0 0-4.88 0L7.002 2.083 5.894.995a3.49 3.49 0 0 0-4.88 0z"
                           fill="#EF0107" fill-rule="evenodd"></path>
                 </svg>
-                at Olin, by Michael, Nick, Gabriella, and Duncan.a
+                at Olin, by Michael, Nick, Gabriella, and Duncan.
             </p>
         </div>
     </footer>
 </section>
-    <script>
-        createDivs({{ NUM_CAPS }})
-    </script>
+<script>
+    createDivs({{ NUM_CAPS }})
+</script>
 </body>
 </html>

@@ -27,9 +27,21 @@ def record_button_receiver():
     return 'none'
 
 
+def reset_button_receiver():
+    turn_on_bool = request.get_data().decode()
+    print(turn_on_bool)
+    if turn_on_bool == 'false':
+        engine.reset_all(turn_on=False)
+    else:
+        engine.reset_all()
+
+    # return 'none' and not None because Flask doesn't like it when None is returned.
+    return 'none'
+
+
 def send_recording_info():
     if engine.heatmap.n == -1:
-        text="No recordings yet. Statistics about your recordings will show up here."
+        text = "No recordings yet. Statistics about your recordings will show up here."
     else:
         text = "Recording #{}\n ".format(engine.n_heatmap + 1) + engine.heatmap.get_time_info(engine.n_heatmap)
     return jsonify(text=text)
@@ -89,14 +101,13 @@ def increment_heatmap_display():
     return 'none'
 
 
-def index(error=False):
-    """ Renders the index HTML page. """
-    # Render the index page, showing the error message if something went wrong
-    return render_template('index.html', visibility=("visible" if error else "hidden"))
+def index():
+    return render_template('index.html', visibility=("visible" if engine.num_caps > 0 else "hidden"))
 
 
 def select_feeds(error=False):
-    if len(engine.cap_dict) == 0:
+    print(engine.num_caps)
+    if engine.num_caps == 0:
         engine.turn_on()
     return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
 
@@ -133,16 +144,18 @@ def feed(engine, cap_num):
     """
     Opens a camera reader, gets a processed frame, encodes it to JPEG, and returns it as a
     snippet of a multipart response body.
-        Author of this function: Elias Gabriel
+        Original author of this function: Elias Gabriel
     """
     # In a loop, get the current frame of the camera as a byte sequence and yield it to the calling process.
     # This lets us send a HTTP response back to the client, but keeps it open to allow for continious
     # updates. In effect, this streams image data from the server to the client's computer through a
     # Motion JPEG.
     # Wrap the encoded frame in a multipart image section, to be inserted into the multipart HTTP response
-    while True:
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(int(cap_num)) + b'\r\n')
 
+    while True:
+        if engine.reset_completed:
+            while True:
+                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.get_frame(int(cap_num)) + b'\r\n')
 
 def heatmap(CAP_NUM):
     """ Returns a mixed multipart HTTP response containing streamed MJPEG data, pulled from
@@ -170,15 +183,17 @@ def heatmap_feed(engine, cap_num):
     while True:
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + engine.show_heatmap(int(cap_num)) + b'\r\n')
 
+
 def upload_file():
-   if request.method == 'POST':
-      f = request.files['file']
-      f.save("./videos/"+f.filename)
-      # Clear camera feeds from dict, reinit with file as source
-      engine.turn_off()
-      engine.turn_on("./videos/"+f.filename)
-      # Update engine.num_caps
-      return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
+    if request.method == 'POST':
+        f = request.files['file']
+        f.save("./videos/" + f.filename)
+        # Clear camera feeds from dict, reinit with file as source
+        engine.turn_off()
+        engine.turn_on("./videos/" + f.filename)
+        # Update engine.num_caps
+        return render_template('select_feeds.html', NUM_CAPS=engine.num_caps - 1)
+
 
 # Create a processing engine. Although it generally isn't good practice to do this in the body of the document, the
 # object needs to be a global instance so that only one is created no matter how many cameras are created. Also, the
@@ -195,6 +210,7 @@ if __name__ == "__main__":
         '/select_feeds': select_feeds,
         '/more_info': more_info,
         '/record_button_receiver': record_button_receiver,
+        '/reset_button_receiver': reset_button_receiver,
         '/cap_switch': cap_switch,
         '/calib_switch': calib_switch,
         '/<CAP_NUM>': eye,
@@ -202,7 +218,7 @@ if __name__ == "__main__":
         '/results': results,
         '/all_cam_switch': all_cam_switch,
         '/send_recording_info': send_recording_info,
-        '/uploader':upload_file,
+        '/uploader': upload_file,
         '/increment_heatmap_display': increment_heatmap_display})
 
     webbrowser.open('http://127.0.0.1:8080/')
