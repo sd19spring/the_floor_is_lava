@@ -101,6 +101,8 @@ class ProcessingEngine:
     """
 
     def __init__(self, threshold=30, debug=False):
+        self.reset_completed = True  # flag used to prevent errors when resetting the cameras
+
         # load the COCO class labels our YOLO model was trained on
         cwd = os.getcwd()
         print(cwd)
@@ -113,7 +115,7 @@ class ProcessingEngine:
         self.ln = 0  # a placeholder (for determining only the *output* layer names that we need from YOLO)
         # that is overridden when self.turn_on() is called
 
-        self.n = 0  # counter for the calibration process
+        self.n_dict = {}  # dictionary to hold counters for the calibration process
         self.stopwatch = Stopwatch()
         self.threshold = threshold  # minimum number of frames used to perform calibration
         self.matrix_dict = {}  # used to store matrices during calibration
@@ -133,6 +135,47 @@ class ProcessingEngine:
 
         self.n_heatmap = 0
 
+    def _load_opencv(self, i, filename=None):
+        """
+
+        :param i: index for opencv capture
+        :param filename:
+        :return:
+        """
+        if filename != None:
+            cap = cv2.VideoCapture(filename)
+        else:
+            cap = cv2.VideoCapture(i)
+
+        if cap.isOpened():
+            # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
+            # for the calibration matrix, 1, which is boolean for whether the camera is to be used, and (height,
+            # width) of the camera frame]
+            self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                                               int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
+
+            # initialize the list used to store the matrices used by the perspective correction (in self.calibrate)
+            self.matrix_dict[i] = []
+            # initialize the counter used during the perspective correction (in self.calibrate)
+            self.n_dict[i] = 0
+
+            # load our YOLO object detector trained on COCO dataset (80 classes):
+            self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath, self.weightsPath)
+            if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
+                # at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
+                # be initialized.
+
+                # determine only the *output* layer names that we need from YOLO
+                self.ln = self.detect_dict[i].getLayerNames()
+                self.ln = [self.ln[i[0] - 1] for i in self.detect_dict[i].getUnconnectedOutLayers()]
+                self.num_caps = 1
+                return
+        else:
+            print("An error occurred loading the file")
+            self.num_caps = 0
+            return
+
+
     def turn_on(self, filename=''):
         """
         This method loads all of the OpenCV camera captures into self.cap_dict and, and also loads all of the
@@ -142,81 +185,37 @@ class ProcessingEngine:
         :return:
         """
         i = 0  # counter used for indexing
-        # If a filename is specified, do no camera feeds.
-        if filename != '':
-            cap = cv2.VideoCapture(filename)
-            if cap.isOpened():
-                # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
-                # for the calibration matrix, 1, which is boolean for whether the camera is to be used, and (height,
-                # width) of the camera frame]
-                print(type(self.cap_dict))
-                self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-                                                   int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
-                self.matrix_dict[i] = []
-                print("[INFO] loading YOLO from disk for file {}...".format(filename))
-                self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,
-                                                                 self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
-                print("[INFO] finished loading YOLO for file {}...".format(filename))
-                if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
-                    #  the at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
-                    # be initialized.
-
-                    # determine only the *output* layer names that we need from YOLO
-                    self.ln = self.detect_dict[i].getLayerNames()
-                    self.ln = [self.ln[i[0] - 1] for i in self.detect_dict[i].getUnconnectedOutLayers()]
-                    self.num_caps = 1
-                    return
-            else:  # The file did not load correctly
-                # TODO: Handle this case better
-                self.num_caps = 0
-                return
+        if filename != '':  # If a filename is specified, do not use camera feeds
+            self._load_opencv(i, filename=filename)
         else:  # using live footage from the cameras connected to the computer
-            # add all of the OpenCV captures to self.cap_dict:
-            while i < 5:  # support up to 5 different cameras
-                cap = cv2.VideoCapture(i)
-                if cap.isOpened():
-                    # Representation of dictionary entries: [OpenCV capture, calibration boolean, 0 which is a placeholder
-                    # for the calibration matrix, 1, which is boolean for whether the camera is to be used, and (height,
-                    # width) of the camera frame]
-                    self.cap_dict[i] = [cap, 0, 0, 1, (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-                                                       int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))]
-                    print("[INFO] loading YOLO from disk for camera {}...".format(i))
-                    self.detect_dict[i] = cv2.dnn.readNetFromDarknet(self.configPath,
-                                                                     self.weightsPath)  # load our YOLO object detector trained on COCO dataset (80 classes)
-                    print("[INFO] finished loading YOLO for camera {}...".format(i))
-                    if i == 0:  # the following part only needs to be initialized once, but it is in this for loop because
-                        #  the at least one cv2.dnn.readNetFromDarknet(...) has to have been initialized for this part to
-                        # be initialized.
+            self._load_opencv(i)
+            i += 1
 
-                        # determine only the *output* layer names that we need from YOLO
-                        self.ln = self.detect_dict[i].getLayerNames()
-                        self.ln = [self.ln[i[0] - 1] for i in self.detect_dict[i].getUnconnectedOutLayers()]
 
-                else:  # all the cameras that can be detected have been, so break the loop:
-                    self.num_caps = i
-                    break
-                i += 1
-
-    def turn_off(self, update_heatmaps=True, reset_detection=True):
-        """
-        Releases all of the OpenCV captures and clears the appropriate attributes from the class.
-        :param update_heatmaps: a boolean for whether the heatmaps should also be reset
-        :return: void
-        """
-        if update_heatmaps:
-            self.heatmap.reset(self.num_caps, self.cap_dict)
-
-        # TODO: currently not used...
+    def reset_all(self, turn_on=True):
+        self.reset_completed = False
         for i in range(self.num_caps):
-            cap = self.cap_dict[i]
-            cap[0].release()
+            self.cap_dict[i][0].release()
 
-        self.cap_dict = {}
-        self.num_caps = 0
+        self.cap_dict = {}  # store the OpenCV captures in a dictionary
+        self.num_caps = 0  # initialize the value that stores the number of OpenCV captures
 
-        if reset_detection:
-            self.detect_dict = {}
-            self.ln = 0
+        # reset all relevant attributes:
+
+        self.n_dict = {}  # dictionary to hold counters for the calibration process
+        self.matrix_dict = {}  # used to store matrices during calibration
+        # initialize parameters for ARUCO detection (used for perspective correction)
+        self.record = False  # flag for whether the class should be generating a heatmap or not
+
+        self.detect_dict = {}  # store detected outputs in a dictionary
+        self.heatmap = Heatmap()
+        self.n_heatmap = 0
+
+        if turn_on:
+            self.turn_on()
+
+        self.reset_completed = True
+
 
     def cap_toggle(self, capNum, toggle):
         """
@@ -281,12 +280,12 @@ class ProcessingEngine:
         len_markers = len(markers)
 
         if self.stopwatch.check_stopwatch() > 2:
-            self.n = 0  # reset the counter if it has been too long; counter is used for ensuring enough frames have
+            self.n_dict[cap_num] = 0  # reset the counter if it has been too long; counter is used for ensuring enough frames have
                         # been captured for the average matrix to be calculated
             self.matrix_dict[cap_num] = []  # reset the matrix_list if this is the case
 
         # visualize the process of the calibration process: n frames calibrated / self.threshold needed
-        cv2.rectangle(frame, (0, frame_y - 30), (int(self.n * frame_x / self.threshold), frame_y), (157, 161, 100), -1)
+        cv2.rectangle(frame, (0, frame_y - 30), (int(self.n_dict[cap_num] * frame_x / self.threshold), frame_y), (157, 161, 100), -1)
 
         if len_markers == 0:  # look for one marker
             cv2.putText(frame, "A full calibration sheet isn't visible.", (frame_x_c - int(frame_x / 10), frame_y - 15),
@@ -299,7 +298,7 @@ class ProcessingEngine:
             return frame
 
         else:  # one calibration marker has been detected
-            self.n += 1  # update the counter
+            self.n_dict[cap_num] += 1  # update the counter
 
             # To calculate the required perspective shift, we will need to find how exactly the calibration square
             # skewed by looking at the shape of the square aruco marker from the perspective of the camera. The
@@ -364,7 +363,7 @@ class ProcessingEngine:
             frame = cv2.warpPerspective(frame, matrix, (frame_x, frame_y))  # apply the transformation matrix
 
             # take self.threshold frames to calibrate
-            if self.n > self.threshold:
+            if self.n_dict[cap_num] > self.threshold:
                 # find the average calibration matrix between the self.threshold frames by summing up all of the
                 # calibration matrices and performing elementwise division of the resulting matrix by the number of
                 # matrices that were added.
@@ -470,6 +469,7 @@ class ProcessingEngine:
         :return: frame or frame converted to bytes, depending on use case
         """
         # if the camera is set to off, then dim the frame by x0.2
+        print('here')
 
         cap = self.cap_dict.get(cap_num)[0]  # select the camera from self.cap_dict
         _, frame = cap.read()  # read the camera capture
