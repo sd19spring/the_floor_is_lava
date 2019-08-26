@@ -1,5 +1,8 @@
 # The Floor is Lava - a computer vision utility for tracking pedestrian foot traffic
 
+### [Website](https://sd19spring.github.io/the_floor_is_lava/)
+
+
 ### Setup:
 Clone the repository and enter the root directory of the project:
 ```
