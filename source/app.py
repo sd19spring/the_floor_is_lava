@@ -28,6 +28,7 @@ def record_button_receiver():
 
 
 def reset_button_receiver():
+    print('here ############################3')
     turn_on_bool = request.get_data().decode()
     print(turn_on_bool)
     if turn_on_bool == 'false':

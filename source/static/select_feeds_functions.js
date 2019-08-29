@@ -42,6 +42,11 @@ function changeSwitch(url) {
     event.preventDefault();
 }
 
+function reset_all(turn_on_bool) {
+    $.post("/reset_button_receiver", turn_on_bool);
+    location.reload();
+}
+
 function muteCam(capNum) {
     // the first condition makes the mute button inaccessible when recording
     if (switchBool !== 'true') if (muteDict[capNum] === 1) {

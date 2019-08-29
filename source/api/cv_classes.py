@@ -194,6 +194,7 @@ class ProcessingEngine:
 
     def reset_all(self, turn_on=True):
         self.reset_completed = False
+        print('here #######################')
         for i in range(self.num_caps):
             self.cap_dict[i][0].release()
 
@@ -469,7 +470,6 @@ class ProcessingEngine:
         :return: frame or frame converted to bytes, depending on use case
         """
         # if the camera is set to off, then dim the frame by x0.2
-        print('here')
 
         cap = self.cap_dict.get(cap_num)[0]  # select the camera from self.cap_dict
         _, frame = cap.read()  # read the camera capture
